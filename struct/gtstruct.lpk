@@ -1,33 +1,28 @@
 <?xml version="1.0"?>
 <CONFIG>
   <Package Version="3">
-    <Name Value="gametoolsetpkg"/>
+    <Name Value="gtstruct"/>
     <CompilerOptions>
       <Version Value="10"/>
       <SearchPaths>
-        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)/"/>
       </SearchPaths>
       <Other>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Type Value="RunAndDesignTime"/>
-    <RequiredPkgs Count="5">
+    <Files Count="1">
       <Item1>
-        <PackageName Value="gtstruct"/>
+        <Filename Value="gtthreadfifo.pas"/>
+        <UnitName Value="gtthreadfifo"/>
       </Item1>
-      <Item2>
-        <PackageName Value="gtnet"/>
-      </Item2>
-      <Item3>
-        <PackageName Value="gtlcl"/>
-      </Item3>
-      <Item4>
-        <PackageName Value="gtfile"/>
-      </Item4>
-      <Item5>
-        <PackageName Value="gtcore"/>
-      </Item5>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="1">
+      <Item1>
+        <PackageName Value="FCL"/>
+        <MinVersion Major="1" Release="1" Valid="True"/>
+      </Item1>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>
