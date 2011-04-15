@@ -27,12 +27,12 @@
         <UnitName Value="GTConfig"/>
       </Item2>
       <Item3>
-        <Filename Value="gtstuff.pas"/>
-        <UnitName Value="GTStuff"/>
-      </Item3>
-      <Item4>
         <Filename Value="gtpaths.pas"/>
         <UnitName Value="GTPaths"/>
+      </Item3>
+      <Item4>
+        <Filename Value="gtstuff.pas"/>
+        <UnitName Value="GTStuff"/>
       </Item4>
       <Item5>
         <Filename Value="gtxml.pas"/>

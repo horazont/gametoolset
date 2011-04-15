@@ -13,16 +13,16 @@
     </CompilerOptions>
     <Files Count="3">
       <Item1>
-        <Filename Value="gtthreadfifo.pas"/>
-        <UnitName Value="GTThreadFIFO"/>
+        <Filename Value="gtintmap.pas"/>
+        <UnitName Value="GTIntMap"/>
       </Item1>
       <Item2>
         <Filename Value="gtmethodlist.pas"/>
         <UnitName Value="GTMethodList"/>
       </Item2>
       <Item3>
-        <Filename Value="gtintmap.pas"/>
-        <UnitName Value="gtintmap"/>
+        <Filename Value="gtthreadfifo.pas"/>
+        <UnitName Value="GTThreadFIFO"/>
       </Item3>
     </Files>
     <Type Value="RunAndDesignTime"/>

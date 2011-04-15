@@ -13,31 +13,31 @@
     </CompilerOptions>
     <Files Count="6">
       <Item1>
-        <Filename Value="gtfiletree.pas"/>
-        <HasRegisterProc Value="True"/>
-        <UnitName Value="GTFileTree"/>
-      </Item1>
-      <Item2>
-        <Filename Value="gtpropertyeditor.pas"/>
-        <UnitName Value="GTPropertyEditor"/>
-      </Item2>
-      <Item3>
-        <Filename Value="gtpropertygrid.pas"/>
-        <HasRegisterProc Value="True"/>
-        <UnitName Value="GTPropertyGrid"/>
-      </Item3>
-      <Item4>
-        <Filename Value="gtrttitable.pas"/>
-        <UnitName Value="GTRTTITable"/>
-      </Item4>
-      <Item5>
         <Filename Value="gteditor.pas"/>
         <HasRegisterProc Value="True"/>
         <UnitName Value="GTEditor"/>
-      </Item5>
-      <Item6>
+      </Item1>
+      <Item2>
+        <Filename Value="gtfiletree.pas"/>
+        <HasRegisterProc Value="True"/>
+        <UnitName Value="GTFileTree"/>
+      </Item2>
+      <Item3>
+        <Filename Value="gtpropertyeditor.pas"/>
+        <UnitName Value="GTPropertyEditor"/>
+      </Item3>
+      <Item4>
+        <Filename Value="gtpropertygrid.pas"/>
+        <HasRegisterProc Value="True"/>
+        <UnitName Value="GTPropertyGrid"/>
+      </Item4>
+      <Item5>
         <Filename Value="gtregistry.pas"/>
         <UnitName Value="GTRegistry"/>
+      </Item5>
+      <Item6>
+        <Filename Value="gtrttitable.pas"/>
+        <UnitName Value="GTRTTITable"/>
       </Item6>
     </Files>
     <Type Value="RunAndDesignTime"/>
