@@ -7,16 +7,16 @@ unit gtlcl;
 interface
 
 uses
-    GTFileTree, GTPropertyEditor, GTPropertyGrid, GTRTTITable, GTEditor, 
-  GTRegistry, LazarusPackageIntf;
+  GTEditor, GTFileTree, GTPropertyEditor, GTPropertyGrid, GTRegistry, 
+  GTRTTITable, LazarusPackageIntf;
 
 implementation
 
 procedure Register; 
 begin
+  RegisterUnit('GTEditor', @GTEditor.Register); 
   RegisterUnit('GTFileTree', @GTFileTree.Register); 
   RegisterUnit('GTPropertyGrid', @GTPropertyGrid.Register); 
-  RegisterUnit('GTEditor', @GTEditor.Register); 
 end; 
 
 initialization

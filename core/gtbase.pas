@@ -17,7 +17,7 @@ of the GNU General Public license (the  "GPL License"), in which case the
 provisions of GPL License are applicable instead of those
 above.
 
-For feedback and questions about Thorium Scripting Language please mail me,
+For feedback and questions about Game Toolset please mail me,
 Jonas Wielicki:
   j.wielicki@sotecware.net
 

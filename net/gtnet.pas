@@ -7,8 +7,8 @@ unit gtnet;
 interface
 
 uses
-    GTSynapseStreamWrapper, GTProtocolTCP, GTProtocolTCPSSL, 
-  GTProtocolUnixSock, GTUnixSockStream, LazarusPackageIntf;
+  GTSynapseStreamWrapper, GTUnixSockStream, GTProtocolTCP, GTProtocolTCPSSL, 
+  GTProtocolUnixSock, LazarusPackageIntf;
 
 implementation
 

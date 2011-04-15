@@ -8,8 +8,8 @@ interface
 
 uses
   GTFileBase, GTFileUtils, GTSession, GTStreamUtils, GTURI, GTURIAutoRegister, 
-  GTVFS, GTProtocolFD, GTProtocolFile, GTProtocolVFS, GTVFSChRoot, 
-  GTVFSDirectoryMount, GTVFSXDG, LazarusPackageIntf;
+  GTVFS, GTProtocolFD, GTProtocolFile, GTProtocolVFS, GTVFSDirectoryMount, 
+  GTVFSXDG, LazarusPackageIntf;
 
 implementation
 
