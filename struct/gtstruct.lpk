@@ -5,17 +5,21 @@
     <CompilerOptions>
       <Version Value="10"/>
       <SearchPaths>
-        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)/"/>
+        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Other>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Files Count="1">
+    <Files Count="2">
       <Item1>
         <Filename Value="gtthreadfifo.pas"/>
-        <UnitName Value="gtthreadfifo"/>
+        <UnitName Value="GTThreadFIFO"/>
       </Item1>
+      <Item2>
+        <Filename Value="gtmethodlist.pas"/>
+        <UnitName Value="gtmethodlist"/>
+      </Item2>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="1">
