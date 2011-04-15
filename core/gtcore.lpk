@@ -32,20 +32,20 @@
       </Item3>
       <Item4>
         <Filename Value="gtpaths.pas"/>
-        <UnitName Value="gtpaths"/>
+        <UnitName Value="GTPaths"/>
       </Item4>
       <Item5>
         <Filename Value="gtxml.pas"/>
-        <UnitName Value="gtxml"/>
+        <UnitName Value="GTXML"/>
       </Item5>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="3">
       <Item1>
-        <PackageName Value="LCL"/>
+        <PackageName Value="libxml2pkg"/>
       </Item1>
       <Item2>
-        <PackageName Value="wilsonstools"/>
+        <PackageName Value="LCL"/>
       </Item2>
       <Item3>
         <PackageName Value="FCL"/>

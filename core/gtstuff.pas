@@ -5,7 +5,7 @@ unit GTStuff;
 interface
 
 uses
-  Classes, SysUtils, GTBase, xml;
+  Classes, SysUtils, GTBase, GTXML;
 
 type
 

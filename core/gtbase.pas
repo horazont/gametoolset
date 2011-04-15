@@ -6,7 +6,7 @@ unit GTBase;
 interface
 
 uses
-  Classes, SysUtils, xml, typinfo, variants, contnrs, fgl, math;
+  Classes, SysUtils, GTXML, typinfo, variants, contnrs, fgl, math;
 
 const
   GTACTION_RESET = 0;
