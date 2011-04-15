@@ -3,9 +3,9 @@
   <Package Version="3">
     <Name Value="gtlcl"/>
     <CompilerOptions>
-      <Version Value="9"/>
+      <Version Value="10"/>
       <SearchPaths>
-        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)/"/>
+        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Other>
         <CompilerPath Value="$(CompPath)"/>
@@ -43,7 +43,7 @@
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="6">
       <Item1>
-        <PackageName Value="stwcore"/>
+        <PackageName Value="gtstruct"/>
       </Item1>
       <Item2>
         <PackageName Value="RunTimeTypeInfoControls"/>

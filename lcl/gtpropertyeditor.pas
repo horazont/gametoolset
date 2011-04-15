@@ -202,9 +202,6 @@ type
 
 implementation
 
-uses
-  stwIntMap;
-
 { TGTMetadataSuppliant }
 
 constructor TGTMetadataSuppliant.Create(AEditor: TPropertyEditor);

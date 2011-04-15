@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, LResources, Forms, Controls, Graphics, Dialogs, RTTIGrids,
-  GTBase, typinfo, ObjectInspector, Messages, LCLType, PropEdits, stwIntMap,
+  GTBase, typinfo, ObjectInspector, Messages, LCLType, PropEdits, GTIntMap,
   contnrs, RTTICtrls;
 
 type
@@ -93,10 +93,10 @@ implementation
 
 type
   TNameMap = TFPDataHashTable;
-  TClassMap = specialize TstwGIntHashMap<TNameMap>;
-  TTypeMap = specialize TstwGIntHashMap<TClassMap>;
-  TValueMap = specialize TstwGIntMap<PGTEnumValueMetadata>;
-  TEnumTypeMap = specialize TstwGIntHashMap<TValueMap>;
+  TClassMap = specialize TGTIntHashMap<TNameMap>;
+  TTypeMap = specialize TGTIntHashMap<TClassMap>;
+  TValueMap = specialize TGTIntMap<PGTEnumValueMetadata>;
+  TEnumTypeMap = specialize TGTIntHashMap<TValueMap>;
 
 var
   PropertyMetadataTree: TTypeMap;
