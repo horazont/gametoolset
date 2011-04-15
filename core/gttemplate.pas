@@ -5,7 +5,7 @@ unit GTTemplate;
 interface
 
 uses
-  Classes, SysUtils, GTBase, GTSession, xml, GTReferenceManager;
+  Classes, SysUtils, GTBase, xml;
 
 type
   { TGTTemplate }

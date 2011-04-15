@@ -27,7 +27,40 @@ type
     property Value: String read FValue write FValue stored false;
   end;
 
+function FormatDataSize(const DataSize: SizeUInt): String;
+function FormatDataSize(const DataSize: Double): String;
+
 implementation
+
+function FormatDataSize(const DataSize: SizeUInt): String;
+begin
+  Exit(FormatDataSize(Double(DataSize)));
+end;
+
+function FormatDataSize(const DataSize: Double): String;
+const
+  Suffixes : array [0..4] of String = ('B', 'KiB', 'MiB', 'GiB', 'TiB');
+var
+  I: Integer;
+  Suffix: String;
+  Value, NewValue: Double;
+begin
+  Value := DataSize;
+  for I := 1 to 4 do
+  begin
+    NewValue := Value / 1024;
+    if NewValue >= 1.0 then
+    begin
+      Value := NewValue;
+    end
+    else
+    begin
+      Suffix := Suffixes[I-1];
+      Break;
+    end;
+  end;
+  Exit(Format('%.2f %s', [Value, Suffix]));
+end;
 
 { TGTStringContainer }
 

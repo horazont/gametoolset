@@ -51,13 +51,15 @@ const
   NULL = 0;
 
 type
+  EGTError = class (Exception);
+
   EGTCancelProgress = class (Exception);
 
-  EGTXMLError = class (Exception);
+  EGTXMLError = class (EGTError);
     EGTXMLInvalidProperty = class (EGTXMLError);
-  EGTContextError = class (Exception);
-  EGTReferenceError = class (Exception);
-  EGTCoreError = class (Exception);
+  EGTContextError = class (EGTError);
+  EGTReferenceError = class (EGTError);
+  EGTCoreError = class (EGTError);
 
   TGTBaseEditable = class;
   TGTBaseObject = class;
@@ -82,7 +84,7 @@ type
   { TGTGenericEventList }
 
   generic TGTGenericEventList<EventType> = class (TObject)
-  type private
+  private type
     TGTGenericEventListEntry = record
       AHandler: EventType;
     end;
@@ -175,7 +177,7 @@ type
   { TGTReferenceManager }
 
   generic TGTReferenceManager<_Type, IGTObserver> = class (TObject)
-  type private
+  private type
     TGTReferenceBlock = array [0..ReferenceBlockSize-1] of _Type;
     PGTReferenceBlock = ^TGTReferenceBlock;
 
@@ -221,7 +223,7 @@ type
     function QueryInterface(const iid : tguid;out obj) : longint;stdcall;
   public
     class function ClassToString: String; virtual;
-    function ToString: String; virtual;
+    function ToString: String; override;
   public
     property Data: Pointer read FData write FData;
   end;
@@ -1307,6 +1309,14 @@ begin
       tkSet:
         SetSetProp(Self, Prop, PropNode.Content);
 
+      tkBool:
+      begin
+        if (PropNode.Content = '1') or (LowerCase(PropNode.Content) = LowerCase(BooleanIdents[True])) then
+          SetOrdProp(Self, Prop, 1)
+        else
+          SetOrdProp(Self, Prop, 0);
+      end;
+
       tkClass:
       begin
         Cls := GetObjectPropClass(ClassType, PropNode.Name);
@@ -1430,6 +1440,9 @@ begin
       tkSet:
         XMLNode.NodeAC[Prop^.Name].Content := GetSetProp(Self, Prop, False);
 
+      tkBool:
+        XMLNode.NodeAC[Prop^.Name].Content := BooleanIdents[GetOrdProp(Self, Prop) <> 0];
+
       tkClass:
       begin
         Cls := GetObjectPropClass(Self, Prop^.Name);
@@ -1446,6 +1459,8 @@ begin
         end;
         Obj.SaveToXML(XMLNode.NodeAC[Prop^.Name]);
       end;
+    else
+      WriteLn('Skipping ', Prop^.Name, ': unknown type: ', GetEnumName(TypeInfo(TTypeKind), Ord(Prop^.PropType^.Kind)));
     end;
   end;
   FreeMem(PropList);

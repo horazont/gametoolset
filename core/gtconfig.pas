@@ -5,7 +5,7 @@ unit GTConfig;
 interface
 
 uses
-  Classes, SysUtils, IniFiles, GTBase, FileUtil, GTXDG;
+  Classes, SysUtils, IniFiles, GTBase, FileUtil, GTPaths;
 
 type
   EGTConfigError = class (EGTCoreError);
@@ -51,7 +51,7 @@ end;
 
 class function TGTConfig.GetConfigPath: String;
 begin
-  Result := XDG.GetXDGConfigPath + GetConfigFileName;
+  Result := Paths.GetXDGConfigPath + GetConfigFileName;
 end;
 
 procedure TGTConfig.AfterConstruction;

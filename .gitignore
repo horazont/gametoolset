@@ -1,2 +1,4 @@
 *.bak
 lib
+backup
+testing*

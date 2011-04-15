@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Package Version="3">
+    <Name Value="gtnet"/>
+    <CompilerOptions>
+      <Version Value="9"/>
+      <SearchPaths>
+        <OtherUnitFiles Value="protocols"/>
+        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Other>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Files Count="5">
+      <Item1>
+        <Filename Value="gtsynapsestreamwrapper.pas"/>
+        <UnitName Value="GTSynapseStreamWrapper"/>
+      </Item1>
+      <Item2>
+        <Filename Value="protocols/gtprotocoltcp.pas"/>
+        <UnitName Value="GTProtocolTCP"/>
+      </Item2>
+      <Item3>
+        <Filename Value="protocols/gtprotocoltcpssl.pas"/>
+        <UnitName Value="GTProtocolTCPSSL"/>
+      </Item3>
+      <Item4>
+        <Filename Value="protocols/gtprotocolunixsock.pas"/>
+        <UnitName Value="GTProtocolUnixSock"/>
+      </Item4>
+      <Item5>
+        <Filename Value="gtunixsockstream.pas"/>
+        <UnitName Value="gtunixsockstream"/>
+      </Item5>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="3">
+      <Item1>
+        <PackageName Value="gtfile"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="synapse"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="FCL"/>
+        <MinVersion Major="1" Valid="True"/>
+      </Item3>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

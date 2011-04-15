@@ -2,12 +2,13 @@
   This source is only used to compile and install the package.
  }
 
-unit gametoolsetpkg; 
+unit gtnet; 
 
 interface
 
 uses
-  LazarusPackageIntf;
+    GTSynapseStreamWrapper, GTProtocolTCP, GTProtocolTCPSSL, 
+  GTProtocolUnixSock, GTUnixSockStream, LazarusPackageIntf;
 
 implementation
 
@@ -16,5 +17,5 @@ begin
 end; 
 
 initialization
-  RegisterPackage('gametoolsetpkg', @Register); 
+  RegisterPackage('gtnet', @Register); 
 end.

@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Package Version="3">
+    <Name Value="gtfile"/>
+    <CompilerOptions>
+      <Version Value="10"/>
+      <SearchPaths>
+        <OtherUnitFiles Value="$(LazarusDir)/lcl/units/$(TargetCPU)-$(TargetOS);protocols;vfs"/>
+        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Parsing>
+        <SyntaxOptions>
+          <StaticKeyword Value="True"/>
+        </SyntaxOptions>
+      </Parsing>
+      <Other>
+        <CompilerMessages>
+          <UseMsgFile Value="True"/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Files Count="13">
+      <Item1>
+        <Filename Value="gtfilebase.pas"/>
+        <UnitName Value="GTFileBase"/>
+      </Item1>
+      <Item2>
+        <Filename Value="gtfileutils.pas"/>
+        <UnitName Value="GTFileUtils"/>
+      </Item2>
+      <Item3>
+        <Filename Value="gtsession.pas"/>
+        <UnitName Value="GTSession"/>
+      </Item3>
+      <Item4>
+        <Filename Value="gtstreamutils.pas"/>
+        <UnitName Value="GTStreamUtils"/>
+      </Item4>
+      <Item5>
+        <Filename Value="gturi.pas"/>
+        <UnitName Value="GTURI"/>
+      </Item5>
+      <Item6>
+        <Filename Value="gturiautoregister.pas"/>
+        <UnitName Value="GTURIAutoRegister"/>
+      </Item6>
+      <Item7>
+        <Filename Value="gtvfs.pas"/>
+        <UnitName Value="GTVFS"/>
+      </Item7>
+      <Item8>
+        <Filename Value="protocols/gtprotocolfd.pas"/>
+        <UnitName Value="GTProtocolFD"/>
+      </Item8>
+      <Item9>
+        <Filename Value="protocols/gtprotocolfile.pas"/>
+        <UnitName Value="GTProtocolFile"/>
+      </Item9>
+      <Item10>
+        <Filename Value="protocols/gtprotocolvfs.pas"/>
+        <UnitName Value="GTProtocolVFS"/>
+      </Item10>
+      <Item11>
+        <Filename Value="vfs/gtvfschroot.pas"/>
+        <UnitName Value="GTVFSChRoot"/>
+      </Item11>
+      <Item12>
+        <Filename Value="vfs/gtvfsdirectorymount.pas"/>
+        <UnitName Value="GTVFSDirectoryMount"/>
+      </Item12>
+      <Item13>
+        <Filename Value="vfs/gtvfsxdg.pas"/>
+        <UnitName Value="GTVFSXDG"/>
+      </Item13>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="2">
+      <Item1>
+        <PackageName Value="gtcore"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="FCL"/>
+        <MinVersion Major="1" Valid="True"/>
+      </Item2>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

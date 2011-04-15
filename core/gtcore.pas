@@ -2,12 +2,12 @@
   This source is only used to compile and install the package.
  }
 
-unit gametoolsetpkg; 
+unit gtcore; 
 
 interface
 
 uses
-  LazarusPackageIntf;
+  GTBase, GTConfig, GTStuff, GTPaths, LazarusPackageIntf;
 
 implementation
 
@@ -16,5 +16,5 @@ begin
 end; 
 
 initialization
-  RegisterPackage('gametoolsetpkg', @Register); 
+  RegisterPackage('gtcore', @Register); 
 end.

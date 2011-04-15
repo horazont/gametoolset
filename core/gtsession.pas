@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, gtbase, variants, typinfo,
-  GTFileBase, contnrs, fgl, libtar, sharedlogger, GTFileUtils;
+  GTFileBase, contnrs, fgl, libtar, GTFileUtils;
 
 type
   EGTSessionError = class (Exception);
