@@ -7,7 +7,7 @@ unit gtstruct;
 interface
 
 uses
-  GTThreadFIFO, GTMethodList, LazarusPackageIntf;
+  GTThreadFIFO, GTMethodList, GTIntMap, LazarusPackageIntf;
 
 implementation
 

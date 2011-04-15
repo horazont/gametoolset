@@ -11,15 +11,19 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Files Count="2">
+    <Files Count="3">
       <Item1>
         <Filename Value="gtthreadfifo.pas"/>
         <UnitName Value="GTThreadFIFO"/>
       </Item1>
       <Item2>
         <Filename Value="gtmethodlist.pas"/>
-        <UnitName Value="gtmethodlist"/>
+        <UnitName Value="GTMethodList"/>
       </Item2>
+      <Item3>
+        <Filename Value="gtintmap.pas"/>
+        <UnitName Value="gtintmap"/>
+      </Item3>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="1">
