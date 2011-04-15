@@ -20,7 +20,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Files Count="13">
+    <Files Count="12">
       <Item1>
         <Filename Value="gtfilebase.pas"/>
         <UnitName Value="GTFileBase"/>
@@ -62,17 +62,13 @@
         <UnitName Value="GTProtocolVFS"/>
       </Item10>
       <Item11>
-        <Filename Value="vfs/gtvfschroot.pas"/>
-        <UnitName Value="GTVFSChRoot"/>
-      </Item11>
-      <Item12>
         <Filename Value="vfs/gtvfsdirectorymount.pas"/>
         <UnitName Value="GTVFSDirectoryMount"/>
-      </Item12>
-      <Item13>
+      </Item11>
+      <Item12>
         <Filename Value="vfs/gtvfsxdg.pas"/>
         <UnitName Value="GTVFSXDG"/>
-      </Item13>
+      </Item12>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="2">
