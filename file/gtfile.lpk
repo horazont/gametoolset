@@ -13,6 +13,9 @@
           <StaticKeyword Value="True"/>
         </SyntaxOptions>
       </Parsing>
+      <CodeGeneration>
+        <SmartLinkUnit Value="True"/>
+      </CodeGeneration>
       <Other>
         <CompilerMessages>
           <UseMsgFile Value="True"/>
@@ -38,36 +41,36 @@
         <UnitName Value="GTStreamUtils"/>
       </Item4>
       <Item5>
-        <Filename Value="gturi.pas"/>
-        <UnitName Value="GTURI"/>
-      </Item5>
-      <Item6>
         <Filename Value="gturiautoregister.pas"/>
         <UnitName Value="GTURIAutoRegister"/>
-      </Item6>
-      <Item7>
+      </Item5>
+      <Item6>
         <Filename Value="gtvfs.pas"/>
         <UnitName Value="GTVFS"/>
-      </Item7>
-      <Item8>
+      </Item6>
+      <Item7>
         <Filename Value="protocols/gtprotocolfd.pas"/>
         <UnitName Value="GTProtocolFD"/>
-      </Item8>
-      <Item9>
+      </Item7>
+      <Item8>
         <Filename Value="protocols/gtprotocolfile.pas"/>
         <UnitName Value="GTProtocolFile"/>
-      </Item9>
-      <Item10>
+      </Item8>
+      <Item9>
         <Filename Value="protocols/gtprotocolvfs.pas"/>
         <UnitName Value="GTProtocolVFS"/>
-      </Item10>
-      <Item11>
+      </Item9>
+      <Item10>
         <Filename Value="vfs/gtvfsdirectorymount.pas"/>
         <UnitName Value="GTVFSDirectoryMount"/>
-      </Item11>
-      <Item12>
+      </Item10>
+      <Item11>
         <Filename Value="vfs/gtvfsxdg.pas"/>
         <UnitName Value="GTVFSXDG"/>
+      </Item11>
+      <Item12>
+        <Filename Value="gtvfsconfig.pas"/>
+        <UnitName Value="gtvfsconfig"/>
       </Item12>
     </Files>
     <Type Value="RunAndDesignTime"/>

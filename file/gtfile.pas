@@ -7,9 +7,9 @@ unit gtfile;
 interface
 
 uses
-  GTFileBase, GTFileUtils, GTSession, GTStreamUtils, GTURI, GTURIAutoRegister, 
-  GTVFS, GTProtocolFD, GTProtocolFile, GTProtocolVFS, GTVFSDirectoryMount, 
-  GTVFSXDG, LazarusPackageIntf;
+  GTFileBase, GTFileUtils, GTSession, GTStreamUtils, GTURIAutoRegister, GTVFS, 
+  GTProtocolFD, GTProtocolFile, GTProtocolVFS, GTVFSDirectoryMount, GTVFSXDG, 
+  GTVFSConfig, LazarusPackageIntf;
 
 implementation
 

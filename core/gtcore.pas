@@ -7,7 +7,7 @@ unit gtcore;
 interface
 
 uses
-  GTBase, GTConfig, GTPaths, GTStuff, GTXML, LazarusPackageIntf;
+  GTBase, GTConfig, GTPaths, GTStuff, GTXML, GTURI, LazarusPackageIntf;
 
 implementation
 

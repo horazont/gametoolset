@@ -33,7 +33,7 @@ unit GTBase;
 interface
 
 uses
-  Classes, SysUtils, GTXML, typinfo, variants, contnrs, fgl, math;
+  Classes, SysUtils, GTXML, typinfo, variants, contnrs, fgl, math, GTURI;
 
 const
   GTACTION_RESET = 0;
@@ -283,8 +283,12 @@ type
     // data. These methods are for editor internal purposes. For exporting
     // one should define own methods in an own base class based on this one.
     procedure LoadFromFile(const AFileName: String); virtual;
+    procedure LoadFromStream(const AStream: TStream); virtual;
+    procedure LoadFromURL(const AURL: String); virtual;
     procedure LoadFromXML(const XMLNode: TxmlNode; Context: IGTLoaderContext = nil); virtual;
     procedure SaveToFile(const AFileName: String); virtual;
+    procedure SaveToStream(const AStream: TStream); virtual;
+    procedure SaveToURL(const AURL: String); virtual;
     procedure SaveToXML(const XMLNode: TxmlNode); virtual;
   public
     property OnChange: TGTEventList read FOnChange;
@@ -1280,6 +1284,31 @@ begin
   end;
 end;
 
+procedure TGTBaseObject.LoadFromStream(const AStream: TStream);
+var
+  Doc: TxmlDocument;
+begin
+  Doc := TxmlDocument.Create;
+  try
+    Doc.LoadFromStream(AStream);
+    LoadFromXML(Doc.RootNode);
+  finally
+    Doc.Free;
+  end;
+end;
+
+procedure TGTBaseObject.LoadFromURL(const AURL: String);
+var
+  S: TStream;
+begin
+  S := TGTURIStream.Create(AURL, omRead, wmIgnore, smDontCare);
+  try
+    LoadFromStream(S);
+  finally
+    S.Free;
+  end;
+end;
+
 procedure TGTBaseObject.LoadFromXML(const XMLNode: TxmlNode; Context: IGTLoaderContext = nil);
 var
   PropNode: TxmlNode;
@@ -1388,6 +1417,32 @@ begin
     Doc.SaveToFile(AFileName);
   finally
     Doc.Free;
+  end;
+end;
+
+procedure TGTBaseObject.SaveToStream(const AStream: TStream);
+var
+  Doc: TxmlDocument;
+begin
+  Doc := TxmlDocument.Create;
+  try
+    Doc.RootNode.Name := DefaultNodeName;
+    SaveToXML(Doc.RootNode);
+    Doc.SaveToStream(AStream);
+  finally
+    Doc.Free;
+  end;
+end;
+
+procedure TGTBaseObject.SaveToURL(const AURL: String);
+var
+  S: TStream;
+begin
+  S := TGTURIStream.Create(AURL, omWrite, wmOverwrite, smDontCare);
+  try
+    SaveToStream(S);
+  finally
+    S.Free;
   end;
 end;
 
