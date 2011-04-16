@@ -1,0 +1,76 @@
+object ConfigForm: TConfigForm
+  Left = 1720
+  Height = 147
+  Top = 358
+  Width = 241
+  Caption = 'Configtest'
+  ClientHeight = 147
+  ClientWidth = 241
+  OnCreate = FormCreate
+  Position = poDesktopCenter
+  LCLVersion = '0.9.31'
+  object TIEdit1: TTIEdit
+    Left = 92
+    Height = 24
+    Top = 4
+    Width = 140
+    Link.TIPropertyName = 'Value1'
+    TabOrder = 0
+  end
+  object TIEdit2: TTIEdit
+    Left = 92
+    Height = 24
+    Top = 28
+    Width = 140
+    Link.TIPropertyName = 'Value2'
+    TabOrder = 1
+  end
+  object TIEdit3: TTIEdit
+    Left = 92
+    Height = 24
+    Top = 52
+    Width = 140
+    Link.TIPropertyName = 'Value3'
+    TabOrder = 2
+  end
+  object TISpinEdit1: TTISpinEdit
+    Left = 92
+    Height = 24
+    Top = 76
+    Width = 138
+    Link.TIPropertyName = 'Value4'
+    TabOrder = 3
+  end
+  object Label1: TLabel
+    Left = 4
+    Height = 15
+    Top = 8
+    Width = 44
+    Caption = 'Value 1'
+    ParentColor = False
+  end
+  object Label2: TLabel
+    Left = 4
+    Height = 15
+    Top = 32
+    Width = 44
+    Caption = 'Value 2'
+    ParentColor = False
+  end
+  object Label3: TLabel
+    Left = 4
+    Height = 15
+    Top = 56
+    Width = 44
+    Caption = 'Value 3'
+    ParentColor = False
+  end
+  object Label4: TLabel
+    Left = 4
+    Height = 15
+    Top = 80
+    Width = 44
+    Caption = 'Value 4'
+    ParentColor = False
+  end
+end
