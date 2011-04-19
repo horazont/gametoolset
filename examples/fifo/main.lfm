@@ -1,0 +1,65 @@
+object Form1: TForm1
+  Left = 1530
+  Height = 411
+  Top = 250
+  Width = 509
+  Caption = 'Fibonacci Calculator'
+  ClientHeight = 411
+  ClientWidth = 509
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  LCLVersion = '0.9.31'
+  object LIndex: TLabel
+    Left = 4
+    Height = 15
+    Top = 4
+    Width = 176
+    Caption = 'Fibonacci number to calculate:'
+    ParentColor = False
+  end
+  object SNumber: TSpinEdit
+    Left = 4
+    Height = 24
+    Top = 20
+    Width = 379
+    Anchors = [akTop, akLeft, akRight]
+    AutoSize = False
+    MaxValue = 1000000
+    MinValue = 1
+    TabOrder = 0
+    Value = 1
+  end
+  object Button1: TButton
+    Left = 381
+    Height = 25
+    Top = 19
+    Width = 123
+    Anchors = [akTop, akRight]
+    Caption = 'Enqueue calculation'
+    OnClick = Button1Click
+    TabOrder = 1
+  end
+  object Label1: TLabel
+    Left = 4
+    Height = 15
+    Top = 48
+    Width = 45
+    Caption = 'Results:'
+    ParentColor = False
+  end
+  object MResults: TMemo
+    Left = 4
+    Height = 343
+    Top = 64
+    Width = 501
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    ReadOnly = True
+    ScrollBars = ssAutoBoth
+    TabOrder = 2
+  end
+  object ApplicationProperties1: TApplicationProperties
+    OnIdle = ApplicationProperties1Idle
+    left = 354
+    top = 104
+  end
+end
