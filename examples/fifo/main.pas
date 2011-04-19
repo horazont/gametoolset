@@ -34,17 +34,17 @@ type
     procedure Execute; override;
   end;
 
-  { TForm1 }
+  { TMainForm }
 
-TForm1 = class(TForm)
+TMainForm = class(TForm)
     ApplicationProperties1: TApplicationProperties;
-    Button1: TButton;
+    BEnqueue: TButton;
     Label1: TLabel;
     LIndex: TLabel;
     MResults: TMemo;
     SNumber: TSpinEdit;
     procedure ApplicationProperties1Idle(Sender: TObject; var Done: Boolean);
-    procedure Button1Click(Sender: TObject);
+    procedure BEnqueueClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
@@ -55,13 +55,13 @@ TForm1 = class(TForm)
   end; 
 
 var
-  Form1: TForm1; 
+  MainForm: TMainForm;
 
 implementation
 
-{ TForm1 }
+{ TMainForm }
 
-procedure TForm1.ApplicationProperties1Idle(Sender: TObject; var Done: Boolean);
+procedure TMainForm.ApplicationProperties1Idle(Sender: TObject; var Done: Boolean);
 var
   Data: PProcessingOutput;
 begin
@@ -75,7 +75,7 @@ begin
   Done := True;
 end;
 
-procedure TForm1.Button1Click(Sender: TObject);
+procedure TMainForm.BEnqueueClick(Sender: TObject);
 var
   Input: PProcessingInput;
 begin
@@ -84,7 +84,7 @@ begin
   FFifoToThread.Push(Input);
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TMainForm.FormCreate(Sender: TObject);
 begin
   FFifoFromThread := TGTThreadFIFO.Create;
   FFifoToThread := TGTThreadFIFO.Create;
@@ -92,7 +92,7 @@ begin
   FFibThread2 := TFibThread.Create(FFifoToThread, FFifoFromThread);
 end;
 
-procedure TForm1.FormDestroy(Sender: TObject);
+procedure TMainForm.FormDestroy(Sender: TObject);
 begin
   FFibThread2.Terminate;
   FFibThread1.Terminate;
