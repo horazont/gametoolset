@@ -53,12 +53,11 @@ type
   private
     FAvailableSemaphore: Pointer;
     FBottomElement: PGTThreadFIFOElement;
-    FBottomLock: TRTLCriticalSection;
     FEmpty: Boolean;
+    FLock: TRTLCriticalSection;
     FTag: Integer;
     FTM: TThreadManager;
     FTopElement: PGTThreadFIFOElement;
-    FTopLock: TRTLCriticalSection;
   protected
     property Tag: Integer read FTag write FTag;
 
@@ -105,16 +104,14 @@ begin
   FBottomElement := nil;
   FTopElement := nil;
   FAvailableSemaphore := FTM.SemaphoreInit();
-  InitCriticalSection(FTopLock);
-  InitCriticalSection(FBottomLock);
+  InitCriticalSection(FLock);
 end;
 
 destructor TGTCustomThreadFIFO.Destroy;
 var
   Element, NewElement: PGTThreadFIFOElement;
 begin
-  EnterCriticalsection(FTopLock);
-  EnterCriticalsection(FBottomLock);
+  EnterCriticalsection(FLock);
   try
     Element := FBottomElement;
     while (Element <> nil) do
@@ -129,8 +126,7 @@ begin
     FTM.SemaphoreDestroy(FAvailableSemaphore);
   finally
     inherited Destroy;
-    DoneCriticalsection(FTopLock);
-    DoneCriticalsection(FBottomLock);
+    DoneCriticalsection(FLock);
   end;
 end;
 
@@ -143,8 +139,7 @@ procedure TGTCustomThreadFIFO.Clear;
 var
   Element, NewElement: PGTThreadFIFOElement;
 begin
-  EnterCriticalSection(FTopLock);
-  EnterCriticalSection(FBottomLock);
+  EnterCriticalSection(FLock);
   try
     Element := FBottomElement;
     while (Element <> nil) do
@@ -158,8 +153,7 @@ begin
     FTopElement := nil;
     FEmpty := True;
   finally
-    LeaveCriticalSection(FBottomLock);
-    LeaveCriticalSection(FTopLock);
+    LeaveCriticalSection(FLock);
   end;
 end;
 
@@ -172,6 +166,7 @@ function TGTCustomThreadFIFO.Pop: Pointer;
 var
   Element: PGTThreadFIFOElement;
 begin
+  WriteLn('Pop');
   {$ifdef Linux}
   if sem_trywait(FAvailableSemaphore) <> 0 then
     Exit(nil);
@@ -182,11 +177,11 @@ begin
   {make sure not to use PopBlocking and Pop on the same fifo on non-linux
    platforms for now.}
   {$endif}
-  EnterCriticalSection(FBottomLock);
+  EnterCriticalSection(FLock);
   if FBottomElement = nil then
   begin
     Result := nil;
-    LeaveCriticalSection(FBottomLock);
+    LeaveCriticalSection(FLock);
     Exit;
   end;
   try
@@ -196,18 +191,18 @@ begin
     {$endif}
     // we need to acquire the top lock here as FBottomElement is actually
     // FTopElement if the following if evaluates to true
-    EnterCriticalSection(FTopLock);
+    EnterCriticalSection(FLock);
     if FBottomElement^.Up = nil then
     begin
       FTopElement := nil;
       FEmpty := True;
     end;
-    LeaveCriticalSection(FTopLock);
+    LeaveCriticalSection(FLock);
     Element := FBottomElement;
     FBottomElement := FBottomElement^.Up;
     FreeMem(Element);
   finally
-    LeaveCriticalSection(FBottomLock);
+    LeaveCriticalSection(FLock);
   end;
 end;
 
@@ -216,29 +211,25 @@ var
   Element: PGTThreadFIFOElement;
 begin
   FTM.SemaphoreWait(FAvailableSemaphore);
-  EnterCriticalSection(FBottomLock);
+  EnterCriticalSection(FLock);
   if FBottomElement = nil then
   begin
     Result := nil;
-    LeaveCriticalSection(FBottomLock);
+    LeaveCriticalSection(FLock);
     Exit;
   end;
   try
     Result := FBottomElement^.Data;
-    // we need to acquire the top lock here as FBottomElement is actually
-    // FTopElement if the following if evaluates to true
-    EnterCriticalSection(FTopLock);
     if FBottomElement^.Up = nil then
     begin
       FTopElement := nil;
       FEmpty := True;
     end;
-    LeaveCriticalSection(FTopLock);
     Element := FBottomElement;
     FBottomElement := FBottomElement^.Up;
     FreeMem(Element);
   finally
-    LeaveCriticalSection(FBottomLock);
+    LeaveCriticalSection(FLock);
   end;
 end;
 
@@ -249,9 +240,8 @@ begin
   NewElement := GetMem(SizeOf(TGTThreadFIFOElement));
   NewElement^.Up := nil;
   NewElement^.Data := AData;
-  EnterCriticalSection(FTopLock);
+  EnterCriticalSection(FLock);
   try
-    EnterCriticalSection(FBottomLock);
     if FTopElement = nil then
     begin
       FBottomElement := NewElement;
@@ -259,11 +249,10 @@ begin
     end
     else
       FTopElement^.Up := NewElement;
-    LeaveCriticalSection(FBottomLock);
     FTopElement := NewElement;
     FTM.SemaphorePost(FAvailableSemaphore);
   finally
-    LeaveCriticalSection(FTopLock);
+    LeaveCriticalSection(FLock);
   end;
 end;
 
@@ -290,14 +279,13 @@ var
 begin
   List := TFPList.Create;
   try
-    EnterCriticalSection(FBottomLock);
+    EnterCriticalSection(FLock);
     try
       // First, save all entries to a list so we do not have to wait for some
       // expensive calls while we have the list locked.
       CurrElement := FBottomElement;
       if CurrElement = nil then
         Exit;
-      EnterCriticalSection(FTopLock);
       while CurrElement <> nil do
       begin
         List.Add(CurrElement^.Data);
@@ -307,9 +295,8 @@ begin
       end;
       FTopElement := nil;
       FBottomElement := nil;
-      LeaveCriticalSection(FTopLock);
     finally
-      LeaveCriticalSection(FBottomLock);
+      LeaveCriticalSection(FLock);
     end;
     for I := 0 to List.Count - 1 do
     begin
