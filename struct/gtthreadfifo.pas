@@ -28,7 +28,7 @@ unit GTThreadFIFO;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils{$ifdef Linux}, ctypes{$endif};
 
 type
   PGTThreadFIFOElement = ^TGTThreadFIFOElement;
@@ -56,6 +56,7 @@ type
     FBottomLock: TRTLCriticalSection;
     FEmpty: Boolean;
     FTag: Integer;
+    FTM: TThreadManager;
     FTopElement: PGTThreadFIFOElement;
     FTopLock: TRTLCriticalSection;
   protected
@@ -66,6 +67,7 @@ type
     procedure Clear;
     function Empty: Boolean;
     function Pop: Pointer;
+    function PopBlocking: Pointer;
     procedure Push(AData: Pointer);
     procedure WaitData;
   public
@@ -89,18 +91,20 @@ type
 
 implementation
 
-var
-  TM: TThreadManager;
+{$ifdef Linux}
+function sem_trywait(sem: pointer): cint; external 'rt';
+{$endif}
 
 { TGTCustomThreadFIFO }
 
 constructor TGTCustomThreadFIFO.Create;
 begin
+  GetThreadManager(FTM);
   FTag := 0;
   FEmpty := True;
   FBottomElement := nil;
   FTopElement := nil;
-  //FAvailableSemaphore := TM.SemaphoreInit;
+  FAvailableSemaphore := FTM.SemaphoreInit();
   InitCriticalSection(FTopLock);
   InitCriticalSection(FBottomLock);
 end;
@@ -122,7 +126,7 @@ begin
     end;
     FBottomElement := nil;
     FTopElement := nil;
-    //TM.SemaphoreDestroy(FAvailableSemaphore);
+    FTM.SemaphoreDestroy(FAvailableSemaphore);
   finally
     inherited Destroy;
     DoneCriticalsection(FTopLock);
@@ -168,6 +172,16 @@ function TGTCustomThreadFIFO.Pop: Pointer;
 var
   Element: PGTThreadFIFOElement;
 begin
+  {$ifdef Linux}
+  if sem_trywait(FAvailableSemaphore) <> 0 then
+    Exit(nil);
+  {$else}
+  {$WARNING This will deadlock if a concurrent thread using PopBlocking gets the last element in the fifo}
+  {On linux platforms, this is avoided by the usage of sem_trywait. Suggestions
+   to solve this on other platforms are appreciated.}
+  {make sure not to use PopBlocking and Pop on the same fifo on non-linux
+   platforms for now.}
+  {$endif}
   EnterCriticalSection(FBottomLock);
   if FBottomElement = nil then
   begin
@@ -177,13 +191,49 @@ begin
   end;
   try
     Result := FBottomElement^.Data;
+    {$ifndef Linux}
+    FTM.SemaphoreWait(FAvailableSemaphore);
+    {$endif}
+    // we need to acquire the top lock here as FBottomElement is actually
+    // FTopElement if the following if evaluates to true
+    EnterCriticalSection(FTopLock);
     if FBottomElement^.Up = nil then
     begin
-      EnterCriticalSection(FTopLock);
       FTopElement := nil;
       FEmpty := True;
-      LeaveCriticalSection(FTopLock);
     end;
+    LeaveCriticalSection(FTopLock);
+    Element := FBottomElement;
+    FBottomElement := FBottomElement^.Up;
+    FreeMem(Element);
+  finally
+    LeaveCriticalSection(FBottomLock);
+  end;
+end;
+
+function TGTCustomThreadFIFO.PopBlocking: Pointer;
+var
+  Element: PGTThreadFIFOElement;
+begin
+  FTM.SemaphoreWait(FAvailableSemaphore);
+  EnterCriticalSection(FBottomLock);
+  if FBottomElement = nil then
+  begin
+    Result := nil;
+    LeaveCriticalSection(FBottomLock);
+    Exit;
+  end;
+  try
+    Result := FBottomElement^.Data;
+    // we need to acquire the top lock here as FBottomElement is actually
+    // FTopElement if the following if evaluates to true
+    EnterCriticalSection(FTopLock);
+    if FBottomElement^.Up = nil then
+    begin
+      FTopElement := nil;
+      FEmpty := True;
+    end;
+    LeaveCriticalSection(FTopLock);
     Element := FBottomElement;
     FBottomElement := FBottomElement^.Up;
     FreeMem(Element);
@@ -201,17 +251,17 @@ begin
   NewElement^.Data := AData;
   EnterCriticalSection(FTopLock);
   try
+    EnterCriticalSection(FBottomLock);
     if FTopElement = nil then
     begin
-      EnterCriticalSection(FBottomLock);
       FBottomElement := NewElement;
       FEmpty := False;
-      LeaveCriticalSection(FBottomLock);
     end
     else
       FTopElement^.Up := NewElement;
+    LeaveCriticalSection(FBottomLock);
     FTopElement := NewElement;
-    //TM.SemaphorePost(FAvailableSemaphore);
+    FTM.SemaphorePost(FAvailableSemaphore);
   finally
     LeaveCriticalSection(FTopLock);
   end;
@@ -219,10 +269,9 @@ end;
 
 procedure TGTCustomThreadFIFO.WaitData;
 begin
-  while FEmpty do
-    Sleep(1);
-  //if FEmpty then
-  //  TM.SemaphoreWait(FAvailableSemaphore);
+  // wait for it and repost to allow popping
+  FTM.SemaphoreWait(FAvailableSemaphore);
+  FTM.SemaphorePost(FAvailableSemaphore);
 end;
 
 { TGTAsyncMethods }
@@ -282,9 +331,6 @@ begin
   Element^.Method := AMethod;
   inherited Push(Element);
 end;
-
-initialization
-GetThreadManager(TM);
 
 end.
 
