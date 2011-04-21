@@ -166,7 +166,6 @@ function TGTCustomThreadFIFO.Pop: Pointer;
 var
   Element: PGTThreadFIFOElement;
 begin
-  WriteLn('Pop');
   {$ifdef Linux}
   if sem_trywait(FAvailableSemaphore) <> 0 then
     Exit(nil);
