@@ -28,7 +28,7 @@ unit GTVFSXDG;
 interface
 
 uses
-  Classes, SysUtils, GTVFS, GTURI, GTPaths, GTVFSDirectoryMount, GTVFSChRoot;
+  Classes, SysUtils, GTVFS, GTURI, GTPaths, GTVFSDirectoryMount;
 
 type
 
