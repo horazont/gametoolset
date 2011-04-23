@@ -18,6 +18,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
+    <Version Minor="8"/>
     <Files Count="5">
       <Item1>
         <Filename Value="gtsynapsestreamwrapper.pas"/>
@@ -44,6 +45,7 @@
     <RequiredPkgs Count="3">
       <Item1>
         <PackageName Value="gtfile"/>
+        <MinVersion Minor="8" Valid="True"/>
       </Item1>
       <Item2>
         <PackageName Value="synapse"/>
