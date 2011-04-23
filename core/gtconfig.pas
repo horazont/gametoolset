@@ -45,9 +45,9 @@ type
     procedure ForbidAutoLoad(Relieve: Boolean = False);
   public
     procedure AfterConstruction; override;
-    class function GetConfigPath: String;
-    procedure Load;
-    procedure Save;
+    class function GetConfigPath: String; virtual;
+    procedure Load; virtual;
+    procedure Save; virtual;
   public
     property ConfigPath: String read GetConfigPath;
   end;

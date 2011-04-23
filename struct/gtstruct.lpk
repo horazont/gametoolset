@@ -7,11 +7,18 @@
       <SearchPaths>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
+      <CodeGeneration>
+        <SmartLinkUnit Value="True"/>
+      </CodeGeneration>
       <Other>
+        <CompilerMessages>
+          <UseMsgFile Value="True"/>
+        </CompilerMessages>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Files Count="3">
+    <Version Minor="8"/>
+    <Files Count="5">
       <Item1>
         <Filename Value="gtintmap.pas"/>
         <UnitName Value="GTIntMap"/>
@@ -24,6 +31,14 @@
         <Filename Value="gtthreadfifo.pas"/>
         <UnitName Value="GTThreadFIFO"/>
       </Item3>
+      <Item4>
+        <Filename Value="gtorderedqueue.pas"/>
+        <UnitName Value="GTOrderedQueue"/>
+      </Item4>
+      <Item5>
+        <Filename Value="gtblockmemorymanager.pas"/>
+        <UnitName Value="GTBlockMemoryManager"/>
+      </Item5>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="1">

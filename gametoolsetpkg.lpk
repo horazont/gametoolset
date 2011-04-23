@@ -2,31 +2,45 @@
 <CONFIG>
   <Package Version="3">
     <Name Value="gametoolsetpkg"/>
+    <Author Value="Jonas Wielicki <j.wielicki@sotecware.net>"/>
     <CompilerOptions>
       <Version Value="10"/>
       <SearchPaths>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
+      <CodeGeneration>
+        <SmartLinkUnit Value="True"/>
+      </CodeGeneration>
       <Other>
+        <CompilerMessages>
+          <UseMsgFile Value="True"/>
+        </CompilerMessages>
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
+    <License Value="MPL/LGPL dual-license"/>
+    <Version Minor="8"/>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="5">
       <Item1>
         <PackageName Value="gtstruct"/>
+        <MinVersion Minor="8" Valid="True"/>
       </Item1>
       <Item2>
-        <PackageName Value="gtnet"/>
+        <PackageName Value="gtcore"/>
+        <MinVersion Minor="8" Valid="True"/>
       </Item2>
       <Item3>
-        <PackageName Value="gtlcl"/>
+        <PackageName Value="gtfile"/>
+        <MinVersion Minor="8" Valid="True"/>
       </Item3>
       <Item4>
-        <PackageName Value="gtfile"/>
+        <PackageName Value="gtnet"/>
+        <MinVersion Minor="8" Valid="True"/>
       </Item4>
       <Item5>
-        <PackageName Value="gtcore"/>
+        <PackageName Value="gtlcl"/>
+        <MinVersion Minor="8" Valid="True"/>
       </Item5>
     </RequiredPkgs>
     <UsageOptions>
