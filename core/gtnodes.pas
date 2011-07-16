@@ -155,6 +155,7 @@ type
   protected
     procedure CheckReset;
     function GetOwner: TGTNode;
+    function GetOvermind: TGTNodeOvermind;
     procedure SetupInPorts(const ATypes: array of TGTNodeDataType);
     procedure SetupOutPorts(const ATypes: array of TGTNodeDataType);
   protected
@@ -494,6 +495,11 @@ begin
   Exit(FOwner);
 end;
 
+function TGTNodeThread.GetOvermind: TGTNodeOvermind;
+begin
+  Exit(FOvermind);
+end;
+
 procedure TGTNodeThread.SetupInPorts(
   const ATypes: array of TGTNodeDataType);
 var
@@ -641,7 +647,7 @@ end;
 
 function TGTTypedNodeThread.GetOvermind: TOvermind;
 begin
-  Exit(TOvermind(FOvermind));
+  Exit(TOvermind(inherited GetOvermind));
 end;
 
 { TGTNode }
