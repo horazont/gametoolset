@@ -9,9 +9,9 @@ uses
 
 type
 
-  { TGTNodeDataTypeBlockMemory }
+  { TGTNodeDataTypeCustomBlockMemory }
 
-  TGTNodeDataTypeBlockMemory = class (TGTNodeDataType)
+  TGTNodeDataTypeCustomBlockMemory = class (TGTNodeDataType)
   public
     constructor Create(const AOvermind: TGTNodeOvermind);
     destructor Destroy; override;
@@ -20,21 +20,28 @@ type
     FMemoryManager: TGTStaticBlockMemoryManager;
     FSize: SizeInt;
     procedure SetSize(const AValue: SizeInt);
+  protected
+    property AllowExpansion: Boolean read FAllowExpansion write FAllowExpansion;
+    property Size: SizeInt read FSize write SetSize;
   public
     procedure Burn; override;
     function GetItem: Pointer; override;
     procedure FreeItem(var AItem: Pointer); override;
     procedure Init; override;
-  published
-    property AllowExpansion: Boolean read FAllowExpansion write FAllowExpansion;
-    property Size: SizeInt read FSize write SetSize;
   end;
+
+  TGTNodeDataTypeBlockMemory = class (TGTNodeDataTypeCustomBlockMemory)
+  published
+    property AllowExpansion;
+    property Size;
+  end;
+
 
 implementation
 
-{ TGTNodeDataTypeBlockMemory }
+{ TGTNodeDataTypeCustomBlockMemory }
 
-constructor TGTNodeDataTypeBlockMemory.Create(const AOvermind: TGTNodeOvermind
+constructor TGTNodeDataTypeCustomBlockMemory.Create(const AOvermind: TGTNodeOvermind
   );
 begin
   inherited Create(AOvermind);
@@ -43,13 +50,13 @@ begin
   FMemoryManager := nil;
 end;
 
-destructor TGTNodeDataTypeBlockMemory.Destroy;
+destructor TGTNodeDataTypeCustomBlockMemory.Destroy;
 begin
   Assert(FMemoryManager = nil);
   inherited Destroy;
 end;
 
-procedure TGTNodeDataTypeBlockMemory.SetSize(const AValue: SizeInt);
+procedure TGTNodeDataTypeCustomBlockMemory.SetSize(const AValue: SizeInt);
 begin
   if FSize = AValue then exit;
   if FMemoryManager <> nil then
@@ -57,7 +64,7 @@ begin
   FSize := AValue;
 end;
 
-procedure TGTNodeDataTypeBlockMemory.Burn;
+procedure TGTNodeDataTypeCustomBlockMemory.Burn;
 begin
   if FMemoryManager <> nil then
   begin
@@ -66,17 +73,17 @@ begin
   inherited Burn;
 end;
 
-function TGTNodeDataTypeBlockMemory.GetItem: Pointer;
+function TGTNodeDataTypeCustomBlockMemory.GetItem: Pointer;
 begin
   Result := FMemoryManager.GetFreeBlock;
 end;
 
-procedure TGTNodeDataTypeBlockMemory.FreeItem(var AItem: Pointer);
+procedure TGTNodeDataTypeCustomBlockMemory.FreeItem(var AItem: Pointer);
 begin
   FMemoryManager.ReleaseBlock(AItem);
 end;
 
-procedure TGTNodeDataTypeBlockMemory.Init;
+procedure TGTNodeDataTypeCustomBlockMemory.Init;
 begin
   inherited Init;
   if FMemoryManager <> nil then
