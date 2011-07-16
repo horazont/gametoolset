@@ -139,10 +139,12 @@ type
 
   TGTNodeThread = class (TThread)
   public
-    constructor Create(const AOwnerNode: TGTNode); virtual;
+    constructor Create(const AOvermind: TGTNodeOvermind;
+      const AOwnerNode: TGTNode); virtual;
     destructor Destroy; override;
   private
     FOwner: TGTNode;
+    FOvermind: TGTNodeOvermind;
     FResetRequested: Boolean;
     FResetSemaphore: Pointer;
     FInData, FOutData: TGTNodeDataSet;
@@ -169,6 +171,16 @@ type
   {$M-}
 
   TGTNodeThreadClass = class of TGTNodeThread;
+
+  { TGTTypedNodeThread }
+
+  generic TGTTypedNodeThread<TOvermind> = class (TGTNodeThread)
+  public
+    constructor Create(const AOvermind: TGTNodeOvermind;
+       const AOwnerNode: TGTNode); override;
+  protected
+    function GetOvermind: TOvermind;
+  end;
 
   { TGTNode }
 
@@ -445,9 +457,11 @@ end;
 
 { TGTNodeThread }
 
-constructor TGTNodeThread.Create(const AOwnerNode: TGTNode);
+constructor TGTNodeThread.Create(const AOvermind: TGTNodeOvermind;
+  const AOwnerNode: TGTNode);
 begin
   inherited Create(True);
+  FOvermind := AOvermind;
   FOwner := AOwnerNode;
   FResetRequested := False;
   FResetSemaphore := TM.SemaphoreInit;
@@ -613,6 +627,21 @@ procedure TGTNodeThread.WaitForReset;
 begin
   FResetRequested := True;
   TM.SemaphoreWait(FResetSemaphore);
+end;
+
+{ TGTTypedNodeThread }
+
+constructor TGTTypedNodeThread.Create(const AOvermind: TGTNodeOvermind;
+  const AOwnerNode: TGTNode);
+begin
+  if not (AOvermind.InheritsFrom(TClass(TOvermind))) then
+    raise EGTNodeError.CreateFmt('%s requires overmind inheriting from %s (got %s).', [ToString, TOvermind.ClassName, AOvermind.ToString]);
+  inherited Create(AOvermind, AOwnerNode);
+end;
+
+function TGTTypedNodeThread.GetOvermind: TOvermind;
+begin
+  Exit(TOvermind(FOvermind));
 end;
 
 { TGTNode }
