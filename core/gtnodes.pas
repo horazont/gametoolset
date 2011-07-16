@@ -168,7 +168,7 @@ type
   TGTNodeThread = class (TThread)
   public
     constructor Create(const AOvermind: TGTNodeOvermind;
-      const AOwnerNode: TGTNode);
+      const AOwnerNode: TGTNode); virtual;
     destructor Destroy; override;
   private
     FOwner: TGTNode;
@@ -207,7 +207,7 @@ type
   generic TGTTypedNodeThread<TOvermind> = class (TGTNodeThread)
   public
     constructor Create(const AOvermind: TGTNodeOvermind;
-       const AOwnerNode: TGTNode);
+       const AOwnerNode: TGTNode); override;
   protected
     function GetOvermind: TOvermind;
   end;
@@ -217,7 +217,7 @@ type
   TGTNode = class (TGTBaseObject)
   public
     constructor Create(const AOvermind: TGTNodeOvermind;
-      const AProcessorThread: TGTNodeThread;
+      const AProcessorThread: TGTNodeThreadClass;
       const AOwnsThread: Boolean = True); virtual;
     destructor Destroy; override;
   private
@@ -275,7 +275,7 @@ type
     procedure DeleteAllNodes;
     procedure Init;
     procedure Lock;
-    function NewNode(const AThread: TGTNodeThread;
+    function NewNode(const AThread: TGTNodeThreadClass;
       const AOwnsThread: Boolean = True;
       const ANodeClass: TGTNodeClass = nil): TGTNode;
     procedure Unlock;
@@ -772,12 +772,12 @@ end;
 { TGTNode }
 
 constructor TGTNode.Create(const AOvermind: TGTNodeOvermind;
-  const AProcessorThread: TGTNodeThread; const AOwnsThread: Boolean);
+  const AProcessorThread: TGTNodeThreadClass; const AOwnsThread: Boolean);
 begin
   if AOvermind = nil then
     RequireOvermind;
   inherited Create;
-  FProcessorThread := AProcessorThread;
+  FProcessorThread := AProcessorThread.Create(AOvermind, Self);
   FOwnsThread := AOwnsThread;
   FOvermind := AOvermind;
 end;
@@ -1003,7 +1003,7 @@ begin
   FState := osLocked;
 end;
 
-function TGTNodeOvermind.NewNode(const AThread: TGTNodeThread;
+function TGTNodeOvermind.NewNode(const AThread: TGTNodeThreadClass;
   const AOwnsThread: Boolean; const ANodeClass: TGTNodeClass): TGTNode;
 var
   NodeClass: TGTNodeClass;
