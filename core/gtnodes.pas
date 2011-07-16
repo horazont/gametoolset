@@ -481,7 +481,15 @@ var
 begin
   ForceState(osLocked);
   if FDestPorts.Count = 0 then
+  begin
+    Item := FOutPipe.Pop;
+    while Item <> nil do
+    begin
+      FOutPipe.DataType.FreeItem(Item);
+      Item := FOutPipe.Pop;
+    end;
     Exit;
+  end;
   Item := FOutPipe.Pop;
   while Item <> nil do
   begin
