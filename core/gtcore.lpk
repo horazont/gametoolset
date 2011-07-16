@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 <CONFIG>
-  <Package Version="3">
+  <Package Version="4">
     <Name Value="gtcore"/>
+    <AddToProjectUsesSection Value="True"/>
     <CompilerOptions>
       <Version Value="10"/>
       <SearchPaths>
-        <OtherUnitFiles Value="$(LazarusDir)/lcl/units/$(TargetCPU)-$(TargetOS)"/>
+        <OtherUnitFiles Value="$(LazarusDir)/lcl/units/$(TargetCPU)-$(TargetOS);datatypes"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Parsing>
@@ -24,7 +25,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="8"/>
-    <Files Count="6">
+    <Files Count="8">
       <Item1>
         <Filename Value="gtbase.pas"/>
         <UnitName Value="GTBase"/>
@@ -49,19 +50,30 @@
         <Filename Value="gturi.pas"/>
         <UnitName Value="GTURI"/>
       </Item6>
+      <Item7>
+        <Filename Value="gtnodes.pas"/>
+        <UnitName Value="GTNodes"/>
+      </Item7>
+      <Item8>
+        <Filename Value="datatypes/gtnodedatatypeblockmemory.pas"/>
+        <UnitName Value="GTNodeDataTypeBlockMemory"/>
+      </Item8>
     </Files>
     <Type Value="RunAndDesignTime"/>
-    <RequiredPkgs Count="3">
+    <RequiredPkgs Count="4">
       <Item1>
-        <PackageName Value="libxml2pkg"/>
+        <PackageName Value="gtstruct"/>
       </Item1>
       <Item2>
-        <PackageName Value="LCL"/>
+        <PackageName Value="libxml2pkg"/>
       </Item2>
       <Item3>
+        <PackageName Value="LCL"/>
+      </Item3>
+      <Item4>
         <PackageName Value="FCL"/>
         <MinVersion Major="1" Valid="True"/>
-      </Item3>
+      </Item4>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>
