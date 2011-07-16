@@ -58,9 +58,12 @@ type
     FTag: Integer;
     FTM: TThreadManager;
     FTopElement: PGTThreadFIFOElement;
+    FOnPush: TNotifyEvent;
   protected
+    property OnPush: TNotifyEvent read FOnPush write FOnPush;
     property Tag: Integer read FTag write FTag;
-
+  protected
+    procedure DoOnPush; virtual;
     procedure FreeItem(AData: Pointer); virtual;
   public
     procedure Clear;
@@ -128,6 +131,12 @@ begin
     inherited Destroy;
     DoneCriticalsection(FLock);
   end;
+end;
+
+procedure TGTCustomThreadFIFO.DoOnPush;
+begin
+  if FOnPush <> nil then
+    FOnPush(Self);
 end;
 
 procedure TGTCustomThreadFIFO.FreeItem(AData: Pointer);
@@ -253,6 +262,7 @@ begin
   finally
     LeaveCriticalSection(FLock);
   end;
+  DoOnPush;
 end;
 
 procedure TGTCustomThreadFIFO.WaitData;
