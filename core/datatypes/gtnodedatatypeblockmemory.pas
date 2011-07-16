@@ -66,11 +66,11 @@ end;
 
 procedure TGTNodeDataTypeCustomBlockMemory.Burn;
 begin
+  inherited Burn;
   if FMemoryManager <> nil then
   begin
     FreeAndNil(FMemoryManager);
   end;
-  inherited Burn;
 end;
 
 function TGTNodeDataTypeCustomBlockMemory.GetItem: Pointer;

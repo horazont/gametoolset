@@ -45,6 +45,7 @@ type
   TGTNodeOvermind = class;
 
   TGTNodeOvermindState = (osUnlocked, osInitialized, osLocked);
+  TGTNodeTypeState = (tsBurned, tsParametrized, tsInitialized);
 
   { TGTNodeDataType }
 
@@ -52,9 +53,12 @@ type
   public
     constructor Create(const AOvermind: TGTNodeOvermind);
   private
+    FOnParametrize: TNotifyEvent;
     FOvermind: TGTNodeOvermind;
+    FState: TGTNodeTypeState;
   protected
     procedure DoRefChange; override;
+    procedure ForceState(const AState: TGTNodeTypeState);
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
@@ -63,12 +67,16 @@ type
     function GetItem: Pointer; virtual; abstract;
     function GetSize: SizeUInt; virtual; abstract;
     procedure Init; virtual;
+    procedure Parametrize; virtual;
+  published
+    property OnParametrize: TNotifyEvent read FOnParametrize write FOnParametrize;
   end;
+  TGTNodeDataTypeClass = class of TGTNodeDataType;
   TGTNodeDataTypes = specialize TFPGList<TGTNodeDataType>;
 
-  { TGTNodeFIFO }
+  { TGTNodeOutFIFO }
 
-  TGTNodeFIFO = class (TGTThreadFIFO)
+  TGTNodeOutFIFO = class (TGTThreadFIFO)
   public
     constructor Create(const AThread: TGTNodeThread;
       const ADataType: TGTNodeDataType);
@@ -80,6 +88,20 @@ type
     procedure FreeItem(AData: Pointer); override;
   public
     property DataType: TGTNodeDataType read FDataType;
+  end;
+
+  { TGTNodeInFIFO }
+
+  TGTNodeInFIFO = class (TGTNodeOutFIFO)
+  public
+    constructor Create(const AThread: TGTNodeThread;
+      const ADataTypeClass: TGTNodeDataTypeClass);
+  private
+    FDataTypeClass: TGTNodeDataTypeClass;
+    procedure SetDataType(const AValue: TGTNodeDataType);
+  public
+    property DataType: TGTNodeDataType read FDataType write SetDataType;
+    property DataTypeClass: TGTNodeDataTypeClass read FDataTypeClass;
   end;
 
   { TGTNodePort }
@@ -103,15 +125,15 @@ type
 
   TGTNodeInPort = class (TGTNodePort)
   public
-    constructor Create(const AOwner: TGTNode; const AInPipe: TGTNodeFIFO;
+    constructor Create(const AOwner: TGTNode; const AInPipe: TGTNodeOutFIFO;
       const ANumber: TGTNodePortNumber);
     destructor Destroy; override;
   private
-    FInPipe: TGTNodeFIFO;
+    FInPipe: TGTNodeOutFIFO;
     FSource: TGTNodeOutPort;
     procedure SetSource(const AValue: TGTNodeOutPort);
   published
-    property InPipe: TGTNodeFIFO read FInPipe;
+    property InPipe: TGTNodeOutFIFO read FInPipe;
     property Source: TGTNodeOutPort read FSource write SetSource;
   end;
   TGTNodeInPorts = specialize TFPGList<TGTNodeInPort>;
@@ -120,12 +142,12 @@ type
 
   TGTNodeOutPort = class (TGTNodePort)
   public
-    constructor Create(const AOwner: TGTNode; const AOutPipe: TGTNodeFIFO;
+    constructor Create(const AOwner: TGTNode; const AOutPipe: TGTNodeOutFIFO;
       const ANumber: TGTNodePortNumber);
     destructor Destroy; override;
   private
     FDestPorts: TGTNodeInPorts;
-    FOutPipe: TGTNodeFIFO;
+    FOutPipe: TGTNodeOutFIFO;
   protected
     procedure DataPushed(Sender: TObject);
     procedure DestDeleting(Sender: TObject);
@@ -136,7 +158,7 @@ type
   public
     procedure Push;
   published
-    property OutPipe: TGTNodeFIFO read FOutPipe;
+    property OutPipe: TGTNodeOutFIFO read FOutPipe;
   end;
 
   {$M+}
@@ -156,20 +178,21 @@ type
     FInData, FOutData: TGTNodeDataSet;
     FInCount, FOutCount: TGTNodePortNumber;
   protected
-    FInPorts: array of TGTNodeFIFO;
-    FOutPorts: array of TGTNodeFIFO;
+    FInPorts: array of TGTNodeInFIFO;
+    FOutPorts: array of TGTNodeOutFIFO;
   protected
     procedure CheckReset;
     function GetOwner: TGTNode;
     function GetOvermind: TGTNodeOvermind;
-    procedure SetupInPorts(const ATypes: array of TGTNodeDataType);
+    procedure SetupInPorts(const ATypes: array of TGTNodeDataTypeClass);
     procedure SetupOutPorts(const ATypes: array of TGTNodeDataType);
   protected
     procedure Burn; virtual;
-    procedure Init; virtual; // note that init suspends the thread!
+    procedure Init; virtual;
     procedure ProcessDataSet(const AInputData: TGTNodeDataSet;
       const AOutputData: TGTNodeDataSet); virtual; abstract;
     function RequireInput(const AInput: TGTNodePortNumber): Boolean; virtual;
+    procedure SetupIO; virtual; // note that SetupIO suspends the thread!
   public
     procedure Execute; override;
     procedure Reset;
@@ -294,6 +317,12 @@ begin
     Free;
 end;
 
+procedure TGTNodeDataType.ForceState(const AState: TGTNodeTypeState);
+begin
+  if FState <> AState then
+    raise EGTNodeLockError.Create('Invalid state for this operation.');
+end;
+
 procedure TGTNodeDataType.AfterConstruction;
 begin
   inherited AfterConstruction;
@@ -308,32 +337,67 @@ end;
 
 procedure TGTNodeDataType.Burn;
 begin
-
+  ForceState(tsInitialized);
 end;
 
 procedure TGTNodeDataType.Init;
 begin
-
+  ForceState(tsParametrized);
 end;
 
-{ TGTNodeFIFO }
+procedure TGTNodeDataType.Parametrize;
+begin
+  if FState = tsParametrized then
+    Exit;
+  ForceState(tsBurned);
+  if @FOnParametrize <> nil then
+    FOnParametrize(Self);
+end;
 
-constructor TGTNodeFIFO.Create(const AThread: TGTNodeThread;
+{ TGTNodeOutFIFO }
+
+constructor TGTNodeOutFIFO.Create(const AThread: TGTNodeThread;
   const ADataType: TGTNodeDataType);
 begin
   FDataType := ADataType;
-  ADataType.AddReference(AThread.FOwner);
+  if FDataType <> nil then
+    ADataType.AddReference(AThread.FOwner);
 end;
 
-destructor TGTNodeFIFO.Destroy;
+destructor TGTNodeOutFIFO.Destroy;
 begin
-  FDataType.RemoveReference(FThread.FOwner);
+  if FDataType <> nil then
+    FDataType.RemoveReference(FThread.FOwner);
   inherited Destroy;
 end;
 
-procedure TGTNodeFIFO.FreeItem(AData: Pointer);
+procedure TGTNodeOutFIFO.FreeItem(AData: Pointer);
 begin
   FDataType.FreeItem(AData);
+end;
+
+{ TGTNodeInFIFO }
+
+constructor TGTNodeInFIFO.Create(const AThread: TGTNodeThread;
+  const ADataTypeClass: TGTNodeDataTypeClass);
+begin
+  inherited Create(AThread, nil);
+end;
+
+procedure TGTNodeInFIFO.SetDataType(const AValue: TGTNodeDataType);
+begin
+  if FDataType = AValue then exit;
+  if FDataType <> nil then
+  begin
+    FDataType.RemoveReference(FThread.FOwner);
+    FDataType := nil;
+  end;
+  if AValue = nil then
+    Exit;
+  if not (AValue.ClassType = FDataTypeClass) then
+    raise EGTNodeTypeError.CreateFmt('Node requires %s type, got %s.', [FDataTypeClass.ClassName, AValue.ClassName]);
+  FDataType := AValue;
+  FDataType.AddReference(FThread.FOwner);
 end;
 
 { TGTNodePort }
@@ -363,7 +427,7 @@ end;
 { TGTNodeInPort }
 
 constructor TGTNodeInPort.Create(const AOwner: TGTNode;
-  const AInPipe: TGTNodeFIFO; const ANumber: TGTNodePortNumber);
+  const AInPipe: TGTNodeOutFIFO; const ANumber: TGTNodePortNumber);
 begin
   inherited Create(AOwner, ANumber);
   FInPipe := AInPipe;
@@ -399,7 +463,7 @@ end;
 { TGTNodeOutPort }
 
 constructor TGTNodeOutPort.Create(const AOwner: TGTNode;
-  const AOutPipe: TGTNodeFIFO; const ANumber: TGTNodePortNumber);
+  const AOutPipe: TGTNodeOutFIFO; const ANumber: TGTNodePortNumber);
 begin
   inherited Create(AOwner, ANumber);
   FDestPorts := TGTNodeInPorts.Create;
@@ -534,6 +598,7 @@ begin
     Burn;
     TM.SemaphorePost(FResetSemaphore);
     Suspend;
+    SetupIO;
     Init;
     FResetRequested := False;
   end;
@@ -550,7 +615,7 @@ begin
 end;
 
 procedure TGTNodeThread.SetupInPorts(
-  const ATypes: array of TGTNodeDataType);
+  const ATypes: array of TGTNodeDataTypeClass);
 var
   I, L, Count: Integer;
 begin
@@ -567,14 +632,14 @@ begin
   if L < Count then
   begin
     for I := L to High(FInPorts) do
-      FInPorts[I] := TGTNodeFIFO.Create(Self, ATypes[I]);
+      FInPorts[I] := TGTNodeInFIFO.Create(Self, ATypes[I]);
   end;
   for I := 0 to L-1 do
   begin
-    if FInPorts[I].DataType <> ATypes[I] then
+    if FInPorts[I].DataTypeClass <> ATypes[I] then
     begin
       FInPorts[I].Free;
-      FInPorts[I] := TGTNodeFIFO.Create(Self, ATypes[I]);
+      FInPorts[I] := TGTNodeInFIFO.Create(Self, ATypes[I]);
     end;
   end;
   FOwner.SetupInPorts(Count);
@@ -598,14 +663,14 @@ begin
   if L < Count then
   begin
     for I := L to High(FOutPorts) do
-      FOutPorts[I] := TGTNodeFIFO.Create(Self, ATypes[I]);
+      FOutPorts[I] := TGTNodeOutFIFO.Create(Self, ATypes[I]);
   end;
   for I := 0 to L-1 do
   begin
     if FOutPorts[I].DataType <> ATypes[I] then
     begin
       FOutPorts[I].Free;
-      FOutPorts[I] := TGTNodeFIFO.Create(Self, ATypes[I]);
+      FOutPorts[I] := TGTNodeOutFIFO.Create(Self, ATypes[I]);
     end;
   end;
   FOwner.SetupOutPorts(Count);
@@ -619,11 +684,8 @@ end;
 
 procedure TGTNodeThread.Init;
 begin
-  FInCount := Length(FInPorts);
   FInData := InitDataSet(FInCount);
-  FOutCount := Length(FOutPorts);
   FOutData := InitDataSet(FOutCount);
-  Suspend;
 end;
 
 function TGTNodeThread.RequireInput(const AInput: TGTNodePortNumber): Boolean;
@@ -631,11 +693,19 @@ begin
   Exit(True);
 end;
 
+procedure TGTNodeThread.SetupIO;
+begin
+  FInCount := Length(FInPorts);
+  FOutCount := Length(FOutPorts);
+  Suspend;
+end;
+
 procedure TGTNodeThread.Execute;
 var
   I: Integer;
   Got: TGTNodePortNumber;
 begin
+  SetupIO;
   Init;
   try
     while not Terminated do
