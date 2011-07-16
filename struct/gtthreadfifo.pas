@@ -59,6 +59,9 @@ type
     FTM: TThreadManager;
     FTopElement: PGTThreadFIFOElement;
     FOnPush: TNotifyEvent;
+  private
+    procedure DebugMsg(const S: String);
+    procedure DebugSemaphore;
   protected
     property OnPush: TNotifyEvent read FOnPush write FOnPush;
     property Tag: Integer read FTag write FTag;
@@ -107,6 +110,8 @@ begin
   FBottomElement := nil;
   FTopElement := nil;
   FAvailableSemaphore := FTM.SemaphoreInit();
+  DebugMsg('create');
+  DebugSemaphore;
   InitCriticalSection(FLock);
 end;
 
@@ -126,11 +131,23 @@ begin
     end;
     FBottomElement := nil;
     FTopElement := nil;
+    WriteLn('Semaphore deleted');
     FTM.SemaphoreDestroy(FAvailableSemaphore);
+    DebugSemaphore;
   finally
     inherited Destroy;
     DoneCriticalsection(FLock);
   end;
+end;
+
+procedure TGTCustomThreadFIFO.DebugMsg(const S: String);
+begin
+  //WriteLn(Format('[tid=0x%16.16x] [0x%16.16x] [%s] %s', [ptrint(GetThreadID), Ptrint(Self), ClassName, S]));
+end;
+
+procedure TGTCustomThreadFIFO.DebugSemaphore;
+begin
+  //DebugMsg(Format('FAvailableSemaphore = @$%16.16x', [ptrint(FAvailableSemaphore)]));
 end;
 
 procedure TGTCustomThreadFIFO.DoOnPush;
@@ -161,6 +178,8 @@ begin
     FBottomElement := nil;
     FTopElement := nil;
     FEmpty := True;
+    DebugMsg('clear');
+    DebugSemaphore;
   finally
     LeaveCriticalSection(FLock);
   end;
@@ -209,6 +228,8 @@ begin
     Element := FBottomElement;
     FBottomElement := FBottomElement^.Up;
     FreeMem(Element);
+    DebugMsg('pop');
+    DebugSemaphore;
   finally
     LeaveCriticalSection(FLock);
   end;
@@ -236,6 +257,8 @@ begin
     Element := FBottomElement;
     FBottomElement := FBottomElement^.Up;
     FreeMem(Element);
+    DebugMsg('pop blocking');
+    DebugSemaphore;
   finally
     LeaveCriticalSection(FLock);
   end;
@@ -258,6 +281,8 @@ begin
     else
       FTopElement^.Up := NewElement;
     FTopElement := NewElement;
+    DebugMsg('push');
+    DebugSemaphore;
     FTM.SemaphorePost(FAvailableSemaphore);
   finally
     LeaveCriticalSection(FLock);

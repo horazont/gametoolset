@@ -125,15 +125,15 @@ type
 
   TGTNodeInPort = class (TGTNodePort)
   public
-    constructor Create(const AOwner: TGTNode; const AInPipe: TGTNodeOutFIFO;
+    constructor Create(const AOwner: TGTNode; const AInPipe: TGTNodeInFIFO;
       const ANumber: TGTNodePortNumber);
     destructor Destroy; override;
   private
-    FInPipe: TGTNodeOutFIFO;
+    FInPipe: TGTNodeInFIFO;
     FSource: TGTNodeOutPort;
     procedure SetSource(const AValue: TGTNodeOutPort);
   published
-    property InPipe: TGTNodeOutFIFO read FInPipe;
+    property InPipe: TGTNodeInFIFO read FInPipe;
     property Source: TGTNodeOutPort read FSource write SetSource;
   end;
   TGTNodeInPorts = specialize TFPGList<TGTNodeInPort>;
@@ -228,6 +228,7 @@ type
     FOwnsThread: Boolean;
     function GetInPort(AIndex: Integer): TGTNodeInPort;
     function GetOutPort(AIndex: Integer): TGTNodeOutPort;
+    function GetPortCount: TGTNodePortNumber;
   protected
     procedure ForceState(const AState: TGTNodeOvermindState);
     procedure ForceMaxState(const AState: TGTNodeOvermindState);
@@ -243,6 +244,7 @@ type
   public
     property InPort[AIndex: Integer]: TGTNodeInPort read GetInPort;
     property Port[AIndex: Integer]: TGTNodeOutPort read GetOutPort;
+    property PortCount: TGTNodePortNumber read GetPortCount;
   published
     property ProcessorThread: TGTNodeThread read FProcessorThread;
     property OwnsThread: Boolean read FOwnsThread write FOwnsThread;
@@ -289,6 +291,7 @@ implementation
 function InitDataSet(const Len: TGTNodePortNumber): TGTNodeDataSet;
 begin
   Result := GetMem(Len * SizeOf(Pointer));
+  FillByte(Result^, Len * SizeOf(Pointer), 0);
 end;
 
 procedure BurnDataSet(var ADataSet: TGTNodeDataSet);
@@ -320,7 +323,7 @@ end;
 procedure TGTNodeDataType.ForceState(const AState: TGTNodeTypeState);
 begin
   if FState <> AState then
-    raise EGTNodeLockError.Create('Invalid state for this operation.');
+    raise EGTNodeLockError.CreateFmt('Invalid state (%s) for this operation (%s required).', [GetEnumName(TypeInfo(TGTNodeTypeState), Ord(FState)), GetEnumName(TypeInfo(TGTNodeTypeState), Ord(AState))]);
 end;
 
 procedure TGTNodeDataType.AfterConstruction;
@@ -338,20 +341,25 @@ end;
 procedure TGTNodeDataType.Burn;
 begin
   ForceState(tsInitialized);
+  FState := tsBurned;
 end;
 
 procedure TGTNodeDataType.Init;
 begin
+  if FState = tsBurned then
+    Parametrize;
   ForceState(tsParametrized);
+  FState := tsInitialized;
 end;
 
 procedure TGTNodeDataType.Parametrize;
 begin
-  if FState = tsParametrized then
+  if FState >= tsParametrized then
     Exit;
   ForceState(tsBurned);
-  if @FOnParametrize <> nil then
+  if FOnParametrize <> nil then
     FOnParametrize(Self);
+  FState := tsParametrized;
 end;
 
 { TGTNodeOutFIFO }
@@ -359,7 +367,9 @@ end;
 constructor TGTNodeOutFIFO.Create(const AThread: TGTNodeThread;
   const ADataType: TGTNodeDataType);
 begin
+  inherited Create;
   FDataType := ADataType;
+  FThread := AThread;
   if FDataType <> nil then
     ADataType.AddReference(AThread.FOwner);
 end;
@@ -382,6 +392,7 @@ constructor TGTNodeInFIFO.Create(const AThread: TGTNodeThread;
   const ADataTypeClass: TGTNodeDataTypeClass);
 begin
   inherited Create(AThread, nil);
+  FDataTypeClass := ADataTypeClass;
 end;
 
 procedure TGTNodeInFIFO.SetDataType(const AValue: TGTNodeDataType);
@@ -427,7 +438,7 @@ end;
 { TGTNodeInPort }
 
 constructor TGTNodeInPort.Create(const AOwner: TGTNode;
-  const AInPipe: TGTNodeOutFIFO; const ANumber: TGTNodePortNumber);
+  const AInPipe: TGTNodeInFIFO; const ANumber: TGTNodePortNumber);
 begin
   inherited Create(AOwner, ANumber);
   FInPipe := AInPipe;
@@ -449,13 +460,15 @@ begin
     FSource.Unlink(Self);
     //UnlinkSource(FSource);
     FSource := nil;
+    FInPipe.DataType := nil;
   end;
-  if not (AValue.OutPipe.DataType = FInPipe.DataType) then
-    raise EGTNodeTypeError.Create('Incompatible types.');
+  if not (AValue.OutPipe.DataType.ClassType = FInPipe.DataTypeClass) then
+    raise EGTNodeTypeError.CreateFmt('Incompatible types. Attempt to connect an out port of type %s to an in port of type %s.', [AValue.OutPipe.DataType.ClassName, FInPipe.DataTypeClass.ClassName]);
   FSource := AValue;
   if FSource <> nil then
   begin
     //LinkSource(FSource);
+    FInPipe.DataType := FSource.OutPipe.DataType;
     FSource.Link(Self);
   end;
 end;
@@ -488,7 +501,7 @@ end;
 
 procedure TGTNodeOutPort.DestDeleting(Sender: TObject);
 begin
-  ForceState(osUnlocked);
+  ForceMaxState(osInitialized);
   Unlink(Sender as TGTNodeInPort);
 end;
 
@@ -496,12 +509,12 @@ procedure TGTNodeOutPort.Link(const APort: TGTNodeInPort);
 var
   I: Integer;
 begin
-  ForceState(osUnlocked);
+  ForceMaxState(osInitialized);
   I := FDestPorts.IndexOf(APort);
   if I >= 0 then
     Exit;
-  if APort.InPipe.DataType <> FOutPipe.DataType then
-    raise EGTNodeTypeError.Create('Incompatible types.');
+  if APort.InPipe.DataTypeClass <> FOutPipe.DataType.ClassType then
+    raise EGTNodeTypeError.CreateFmt('Incompatible types. Attempt to connect an out port of type %s to an in port of type %s.', [FOutPipe.DataType.ClassName, APort.InPipe.DataTypeClass.ClassName]);
   FDestPorts.Add(APort);
   APort.Source := Self;
 end;
@@ -510,7 +523,7 @@ procedure TGTNodeOutPort.Unlink(const APort: TGTNodeInPort);
 var
   I: Integer;
 begin
-  ForceState(osUnlocked);
+  ForceMaxState(osInitialized);
   I := FDestPorts.IndexOf(APort);
   if I < 0 then
     Exit;
@@ -521,7 +534,7 @@ procedure TGTNodeOutPort.Unlink(const AIndex: Integer);
 var
   Port: TGTNodeInPort;
 begin
-  ForceState(osUnlocked);
+  ForceMaxState(osInitialized);
   Port := FDestPorts[AIndex];
   FDestPorts.Delete(AIndex);
   Port.Source := nil;
@@ -529,7 +542,7 @@ end;
 
 procedure TGTNodeOutPort.UnlinkAll;
 begin
-  ForceState(osUnlocked);
+  ForceMaxState(osInitialized);
   while FDestPorts.Count > 0 do
     Unlink(0);
 end;
@@ -555,6 +568,7 @@ begin
     Exit;
   end;
   Item := FOutPipe.Pop;
+  WriteLn(Format('TGTNodeOutPort pushes %16.16x to %d clients', [ptrint(Item), FDestPorts.Count]));
   while Item <> nil do
   begin
     Size := FOutPipe.DataType.GetSize;
@@ -566,6 +580,7 @@ begin
     end;
     FDestPorts[0].FInPipe.Push(Item);
     Item := FOutPipe.Pop;
+    WriteLn(Format('TGTNodeOutPort pushes %16.16x to %d clients', [ptrint(Item), FDestPorts.Count]));
   end;
 end;
 
@@ -705,41 +720,51 @@ var
   I: Integer;
   Got: TGTNodePortNumber;
 begin
-  SetupIO;
-  Init;
   try
-    while not Terminated do
-    begin
-      CheckReset;
-      Got := 0;
-      while Got < FInCount do
+    SetupIO;
+    Init;
+    try
+      while not Terminated do
       begin
         CheckReset;
         Got := 0;
-        for I := 0 to FInCount - 1 do
+        while Got < FInCount do
         begin
-          if (FInData[I] = nil) then
+          CheckReset;
+          Got := 0;
+          for I := 0 to FInCount - 1 do
           begin
-            FInData[I] := FInPorts[I].Pop;
-            if FInData[I] <> nil then
-              Inc(Got)
-            else if not RequireInput(I) then
+            if (FInData[I] = nil) then
+            begin
+              if FInPorts[I].DataType <> nil then
+                FInData[I] := FInPorts[I].Pop;
+              if FInData[I] <> nil then
+                Inc(Got)
+              else if not RequireInput(I) then
+                Inc(Got);
+            end
+            else
               Inc(Got);
-          end
-          else
-            Inc(Got);
+          end;
+          ThreadSwitch;
         end;
+        ProcessDataSet(FInData, FOutData);
+        for I := 0 to FOutCount - 1 do
+        begin
+          FOutPorts[I].Push(FOutData[I]);
+        end;
+        for I := 0 to FInCount - 1 do
+          FInData[I] := nil;
         ThreadSwitch;
       end;
-      ProcessDataSet(FInData, FOutData);
-      for I := 0 to FOutCount - 1 do
-      begin
-        FOutPorts[I].Push(FOutData[I]);
-      end;
-      ThreadSwitch;
+    finally
+      Burn;
     end;
-  finally
-    Burn;
+  except
+    on E: Exception do
+    begin
+      WriteLn('Thread ', ToString, ' died with ', E.Message);
+    end;
   end;
 end;
 
@@ -803,6 +828,11 @@ end;
 function TGTNode.GetOutPort(AIndex: Integer): TGTNodeOutPort;
 begin
   Exit(FOutPorts[AIndex]);
+end;
+
+function TGTNode.GetPortCount: TGTNodePortNumber;
+begin
+  Exit(Length(FOutPorts));
 end;
 
 procedure TGTNode.ForceState(const AState: TGTNodeOvermindState);
@@ -952,7 +982,7 @@ end;
 procedure TGTNodeOvermind.ForceState(const AState: TGTNodeOvermindState);
 begin
   if FState <> AState then
-    raise EGTNodeLockError.CreateFmt('%s state required.', [Copy(GetEnumName(TypeInfo(AState), Ord(AState)), 2, 100)]);
+    raise EGTNodeLockError.CreateFmt('%s state required.', [Copy(GetEnumName(TypeInfo(AState), Ord(AState)), 3, 100)]);
 end;
 
 procedure TGTNodeOvermind.ForceMaxState(const AState: TGTNodeOvermindState);
@@ -987,6 +1017,11 @@ begin
   ForceState(osUnlocked);
   for Node in FNodes do
     Node.FProcessorThread.Resume; // first resume after lock will initialize
+  for Node in FNodes do
+  begin
+    while not Node.FProcessorThread.Suspended do
+      ThreadSwitch;
+  end;
   FState := osInitialized;
 end;
 
@@ -998,9 +1033,9 @@ begin
   ForceState(osInitialized);
   for DataType in FTypes do
     DataType.Init;
+  FState := osLocked;
   for Node in FNodes do
     Node.FProcessorThread.Resume; // first resume after init will start
-  FState := osLocked;
 end;
 
 function TGTNodeOvermind.NewNode(const AThread: TGTNodeThreadClass;
