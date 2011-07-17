@@ -1583,6 +1583,8 @@ end;
 
 procedure TGTMultiRefObject.RemoveAllReferences;
 begin
+  if FReferences.Count = 0 then
+    Exit;
   FReferences.Clear;
   DoRefChange;
 end;

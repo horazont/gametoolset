@@ -68,7 +68,6 @@ end;
 procedure TGTNodeDataTypeCustomBlockMemory.Burn;
 begin
   inherited Burn;
-  WriteLn(Format('[0x%16.16x] [%s] Burned', [ptrint(Self), ClassName]));
   if FMemoryManager <> nil then
   begin
     FreeAndNil(FMemoryManager);
@@ -77,7 +76,6 @@ end;
 
 function TGTNodeDataTypeCustomBlockMemory.GetItem: Pointer;
 begin
-  WriteLn(Format('[0x%16.16x] [%s] GetItem (memman=$%16.16x)', [ptrint(Self), ClassName, ptrint(FMemoryManager)]));
   Result := FMemoryManager.GetFreeBlock;
 end;
 
@@ -97,7 +95,6 @@ begin
   if FMemoryManager <> nil then
     FMemoryManager.Free;
   FMemoryManager := TGTStaticBlockMemoryManager.Create(FSize, 128, FAllowExpansion);
-  WriteLn(Format('[0x%16.16x] [%s] Initialized (memman=$%16.16x)', [ptrint(Self), ClassName, ptrint(FMemoryManager)]));
 end;
 
 end.

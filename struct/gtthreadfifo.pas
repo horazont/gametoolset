@@ -131,7 +131,6 @@ begin
     end;
     FBottomElement := nil;
     FTopElement := nil;
-    WriteLn('Semaphore deleted');
     FTM.SemaphoreDestroy(FAvailableSemaphore);
     DebugSemaphore;
   finally
@@ -228,8 +227,6 @@ begin
     Element := FBottomElement;
     FBottomElement := FBottomElement^.Up;
     FreeMem(Element);
-    DebugMsg('pop');
-    DebugSemaphore;
   finally
     LeaveCriticalSection(FLock);
   end;
@@ -257,8 +254,6 @@ begin
     Element := FBottomElement;
     FBottomElement := FBottomElement^.Up;
     FreeMem(Element);
-    DebugMsg('pop blocking');
-    DebugSemaphore;
   finally
     LeaveCriticalSection(FLock);
   end;
@@ -281,8 +276,6 @@ begin
     else
       FTopElement^.Up := NewElement;
     FTopElement := NewElement;
-    DebugMsg('push');
-    DebugSemaphore;
     FTM.SemaphorePost(FAvailableSemaphore);
   finally
     LeaveCriticalSection(FLock);
