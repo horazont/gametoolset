@@ -24,6 +24,7 @@ Jonas Wielicki:
 unit GTNodes;
 
 {$mode objfpc}{$H+}
+{$inline off}
 {.$define DebugMsg}
 
 interface
@@ -764,7 +765,11 @@ begin
   DebugMsg('Burning', [], Self);
   {$endif}
   for I := 0 to High(FInPorts) do
+  begin
+    if FInData[I] <> nil then
+      FInPorts[I].DataType.FreeItem(FInData[I]);
     FInPorts[I].Clear;
+  end;
   for I := 0 to High(FOutPorts) do
     FOutPorts[I].Clear;
   BurnDataSet(FInData);
@@ -804,6 +809,19 @@ begin
     try
       while not Terminated do
       begin
+        CheckReset;
+        if Terminated then
+          Exit;
+        if FPauseRequested then
+        begin
+          DebugMsg('Pausing', [], Self);
+          Suspend;
+          DebugMsg('Unpaused', [], Self);
+          FPauseRequested := False;
+        end;
+        CheckReset;
+        if Terminated then
+          Exit;
         Got := 0;
         while Got < FInCount do
         begin
@@ -811,7 +829,15 @@ begin
           if Terminated then
             Exit;
           if FPauseRequested then
+          begin
+            DebugMsg('Pausing', [], Self);
             Suspend;
+            DebugMsg('Unpaused', [], Self);
+            FPauseRequested := False;
+          end;
+          CheckReset;
+          if Terminated then
+            Exit;
           Got := 0;
           for I := 0 to FInCount - 1 do
           begin
@@ -1223,7 +1249,6 @@ var
   DataType: TGTNodeDataType;
 begin
   ForceState(osLocked);
-  ResumeAll;
   {$ifdef DebugMsg}
   DebugMsg('Sending reset signals', [], Self);
   {$endif}
