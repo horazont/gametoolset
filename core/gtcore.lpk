@@ -25,7 +25,7 @@
       </Other>
     </CompilerOptions>
     <Version Minor="8"/>
-    <Files Count="9">
+    <Files Count="10">
       <Item1>
         <Filename Value="gtbase.pas"/>
         <UnitName Value="GTBase"/>
@@ -60,8 +60,12 @@
       </Item8>
       <Item9>
         <Filename Value="gtdebug.pas"/>
-        <UnitName Value="gtdebug"/>
+        <UnitName Value="GTDebug"/>
       </Item9>
+      <Item10>
+        <Filename Value="gtnodecontroller.pas"/>
+        <UnitName Value="gtnodecontroller"/>
+      </Item10>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="4">

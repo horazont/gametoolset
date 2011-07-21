@@ -129,10 +129,12 @@ type
     destructor Destroy; override;
   private
     FInPipe: TGTNodeInFIFO;
+    FOnChange: TNotifyEvent;
     FSource: TGTNodeOutPort;
     procedure SetSource(const AValue: TGTNodeOutPort);
   published
     property InPipe: TGTNodeInFIFO read FInPipe;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
     property Source: TGTNodeOutPort read FSource write SetSource;
   end;
   TGTNodeInPorts = specialize TFPGList<TGTNodeInPort>;
@@ -199,6 +201,9 @@ type
     procedure Reset;
     procedure Pause;
     procedure WaitForReset(const APostReset: Boolean = True);
+  public
+    class function GetName: String; virtual; abstract;
+    class function GetDescription: String; virtual;
   end;
   {$M-}
 
@@ -230,9 +235,11 @@ type
     FOvermind: TGTNodeOvermind;
     FOwnsThread: Boolean;
     function GetInPort(AIndex: Integer): TGTNodeInPort;
+    function GetInPortCount: TGTNodePortNumber;
     function GetOutPort(AIndex: Integer): TGTNodeOutPort;
     function GetPortCount: TGTNodePortNumber;
   protected
+    procedure DoChange; override;
     procedure ForceState(const AState: TGTNodeOvermindState);
     procedure ForceMaxState(const AState: TGTNodeOvermindState);
     procedure ForceMinState(const AState: TGTNodeOvermindState);
@@ -241,12 +248,14 @@ type
     procedure RequireOvermind;
     procedure SetupInPorts(const ACount: Integer);
     procedure SetupOutPorts(const ACount: Integer);
+    procedure SourceConnected(Sender: TObject);
     procedure WaitForReset(const APostReset: Boolean = True);
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
   public
     property InPort[AIndex: Integer]: TGTNodeInPort read GetInPort;
+    property InPortCount: TGTNodePortNumber read GetInPortCount;
     property Port[AIndex: Integer]: TGTNodeOutPort read GetOutPort;
     property PortCount: TGTNodePortNumber read GetPortCount;
   published
@@ -266,10 +275,12 @@ type
     FNodes: TGTNodeList;
     FOnNodeCreated: TGTNodeEventList;
     FOnNodeDeleting: TGTNodeEventList;
+    FOnNodeUpdated: TGTNodeEventList;
     FState: TGTNodeOvermindState;
   protected
     procedure DoNodeCreated(const ANode: TGTNode);
     procedure DoNodeDeleting(const ANode: TGTNode);
+    procedure DoNodeUpdated(const ANode: TGTNode);
     procedure ForceState(const AState: TGTNodeOvermindState);
     procedure ForceMaxState(const AState: TGTNodeOvermindState);
     procedure ForceMinState(const AState: TGTNodeOvermindState);
@@ -288,6 +299,7 @@ type
   public
     property OnNodeCreated: TGTNodeEventList read FOnNodeCreated;
     property OnNodeDeleting: TGTNodeEventList read FOnNodeDeleting;
+    property OnNodeUpdated: TGTNodeEventList read FOnNodeUpdated;
   end;
 
 implementation
@@ -476,6 +488,8 @@ begin
     FInPipe.DataType := FSource.OutPipe.DataType;
     FSource.Link(Self);
   end;
+  if FOnChange <> nil then
+    FOnChange(Self);
 end;
 
 { TGTNodeOutPort }
@@ -888,6 +902,11 @@ begin
   TM.SemaphoreWait(FResetSemaphore);
 end;
 
+class function TGTNodeThread.GetDescription: String;
+begin
+  Exit('');
+end;
+
 { TGTTypedNodeThread }
 
 constructor TGTTypedNodeThread.Create(const AOvermind: TGTNodeOvermind;
@@ -952,6 +971,11 @@ begin
   Exit(FInPorts[AIndex]);
 end;
 
+function TGTNode.GetInPortCount: TGTNodePortNumber;
+begin
+  Exit(Length(FInPorts));
+end;
+
 function TGTNode.GetOutPort(AIndex: Integer): TGTNodeOutPort;
 begin
   if (AIndex < 0) or (AIndex > High(FOutPorts)) then
@@ -962,6 +986,12 @@ end;
 function TGTNode.GetPortCount: TGTNodePortNumber;
 begin
   Exit(Length(FOutPorts));
+end;
+
+procedure TGTNode.DoChange;
+begin
+  inherited DoChange;
+  FOvermind.DoNodeUpdated(Self);
 end;
 
 procedure TGTNode.ForceState(const AState: TGTNodeOvermindState);
@@ -1012,7 +1042,10 @@ begin
   if L < ACount then
   begin
     for I := L to High(FInPorts) do
+    begin
       FInPorts[I] := TGTNodeInPort.Create(Self, FProcessorThread.FInPorts[I], I);
+      FInPorts[I].OnChange := @SourceConnected;
+    end;
   end;
   for I := 0 to L-1 do
   begin
@@ -1020,8 +1053,10 @@ begin
     begin
       FInPorts[I].Free;
       FInPorts[I] := TGTNodeInPort.Create(Self, FProcessorThread.FInPorts[I], I);
+      FInPorts[I].OnChange := @SourceConnected;
     end;
   end;
+  DoChange;
 end;
 
 procedure TGTNode.SetupOutPorts(const ACount: Integer);
@@ -1051,6 +1086,12 @@ begin
       FOutPorts[I] := TGTNodeOutPort.Create(Self, FProcessorThread.FOutPorts[I], I);
     end;
   end;
+  DoChange;
+end;
+
+procedure TGTNode.SourceConnected(Sender: TObject);
+begin
+  DoChange;
 end;
 
 procedure TGTNode.WaitForReset(const APostReset: Boolean);
@@ -1100,6 +1141,11 @@ procedure TGTNodeOvermind.DoNodeDeleting(const ANode: TGTNode);
 begin
   FOnNodeDeleting.Call(Self, ANode);
   FNodes.Remove(ANode);
+end;
+
+procedure TGTNodeOvermind.DoNodeUpdated(const ANode: TGTNode);
+begin
+  FOnNodeUpdated.Call(Self, ANode);
 end;
 
 procedure TGTNodeOvermind.ForceState(const AState: TGTNodeOvermindState);

@@ -8,7 +8,7 @@ interface
 
 uses
   GTBase, GTConfig, GTPaths, GTStuff, GTXML, GTURI, GTNodes, 
-  GTNodeDataTypeBlockMemory, GTDebug, LazarusPackageIntf;
+  GTNodeDataTypeBlockMemory, GTDebug, GTNodeController, LazarusPackageIntf;
 
 implementation
 
