@@ -53,17 +53,14 @@ type
 
   TGTNodeDataType = class (TObject)
   public
-    constructor Create(const AOvermind: TGTNodeOvermind);
+    constructor Create;
     destructor Destroy; override;
   private
     FOnParametrize: TNotifyEvent;
-    FOvermind: TGTNodeOvermind;
     FState: TGTNodeTypeState;
   protected
     procedure ForceState(const AState: TGTNodeTypeState);
   public
-    procedure AfterConstruction; override;
-    procedure BeforeDestruction; override;
     procedure Burn; virtual;
     procedure FreeItem(var AItem: Pointer); virtual; abstract;
     function GetItem: Pointer; virtual; abstract;
@@ -267,15 +264,12 @@ type
     destructor Destroy; override;
   private
     FNodes: TGTNodeList;
-    FTypes: TGTNodeDataTypes;
     FOnNodeCreated: TGTNodeEventList;
     FOnNodeDeleting: TGTNodeEventList;
     FState: TGTNodeOvermindState;
   protected
     procedure DoNodeCreated(const ANode: TGTNode);
     procedure DoNodeDeleting(const ANode: TGTNode);
-    procedure DoTypeCreated(const AType: TGTNodeDataType);
-    procedure DoTypeDeleting(const AType: TGTNodeDataType);
     procedure ForceState(const AState: TGTNodeOvermindState);
     procedure ForceMaxState(const AState: TGTNodeOvermindState);
     procedure ForceMinState(const AState: TGTNodeOvermindState);
@@ -318,13 +312,12 @@ var
 
 { TGTNodeDataType }
 
-constructor TGTNodeDataType.Create(const AOvermind: TGTNodeOvermind);
+constructor TGTNodeDataType.Create;
 begin
   {$ifdef DebugMsg}
   DebugMsg('Creating', [], Self);
   {$endif}
   inherited Create;
-  FOvermind := AOvermind;
 end;
 
 destructor TGTNodeDataType.Destroy;
@@ -339,18 +332,6 @@ procedure TGTNodeDataType.ForceState(const AState: TGTNodeTypeState);
 begin
   if FState <> AState then
     raise EGTNodeLockError.CreateFmt('Invalid state (%s) for this operation (%s required).', [GetEnumName(TypeInfo(TGTNodeTypeState), Ord(FState)), GetEnumName(TypeInfo(TGTNodeTypeState), Ord(AState))]);
-end;
-
-procedure TGTNodeDataType.AfterConstruction;
-begin
-  inherited AfterConstruction;
-  FOvermind.DoTypeCreated(Self);
-end;
-
-procedure TGTNodeDataType.BeforeDestruction;
-begin
-  FOvermind.DoTypeDeleting(Self);
-  inherited BeforeDestruction;
 end;
 
 procedure TGTNodeDataType.Burn;
@@ -1094,7 +1075,6 @@ end;
 constructor TGTNodeOvermind.Create;
 begin
   inherited Create;
-  FTypes := TGTNodeDataTypes.Create;
   FNodes := TGTNodeList.Create;
   FOnNodeCreated := TGTNodeEventList.Create;
   FOnNodeDeleting := TGTNodeEventList.Create;
@@ -1107,7 +1087,6 @@ begin
   FOnNodeDeleting.Free;
   FOnNodeCreated.Free;
   FNodes.Free;
-  FTypes.Free;
   inherited Destroy;
 end;
 
@@ -1121,16 +1100,6 @@ procedure TGTNodeOvermind.DoNodeDeleting(const ANode: TGTNode);
 begin
   FOnNodeDeleting.Call(Self, ANode);
   FNodes.Remove(ANode);
-end;
-
-procedure TGTNodeOvermind.DoTypeCreated(const AType: TGTNodeDataType);
-begin
-  FTypes.Add(AType);
-end;
-
-procedure TGTNodeOvermind.DoTypeDeleting(const AType: TGTNodeDataType);
-begin
-  FTypes.Remove(AType);
 end;
 
 procedure TGTNodeOvermind.ForceState(const AState: TGTNodeOvermindState);
@@ -1187,8 +1156,6 @@ var
   DataType: TGTNodeDataType;
 begin
   ForceState(osInitialized);
-  for DataType in FTypes do
-    DataType.Init;
   FState := osLocked;
   for Node in FNodes do
     Node.FProcessorThread.Resume; // first resume after init will start
@@ -1285,8 +1252,6 @@ begin
   {$endif}
   // now all ran through the Burn method, posted the semaphore and suspended.
   // They are in a state equal to a newly created thread.
-  for DataType in FTypes do
-    DataType.Burn;
   Sleep(1);
   {$ifdef DebugMsg}
   DebugMsg('Reset done', [], Self);

@@ -13,7 +13,7 @@ type
 
   TGTNodeDataTypeCustomBlockMemory = class (TGTNodeDataType)
   public
-    constructor Create(const AOvermind: TGTNodeOvermind);
+    constructor Create;
     destructor Destroy; override;
   private
     FAllowExpansion: Boolean;
@@ -42,10 +42,9 @@ implementation
 
 { TGTNodeDataTypeCustomBlockMemory }
 
-constructor TGTNodeDataTypeCustomBlockMemory.Create(const AOvermind: TGTNodeOvermind
-  );
+constructor TGTNodeDataTypeCustomBlockMemory.Create;
 begin
-  inherited Create(AOvermind);
+  inherited Create;
   FAllowExpansion := False;
   FSize := 0;
   FMemoryManager := nil;
