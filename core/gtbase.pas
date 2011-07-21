@@ -186,13 +186,16 @@ type
   IGTLoaderContext = interface ['{6B33E981-9190-465F-ADCC-54F2516901CA}']
     procedure RegisterFinalizationHandler(AHandler: TGTEvent);
     procedure RegisterFinalization(Instance: TObject; Prop: PPropInfo; ID: TGTReferenceID);
-    function SolveTemplateReference(const AReferenceID: TGTReferenceID): TGTTemplate;
-    procedure DeclareTemplateReference(const AReferenceID: TGTReferenceID; Instance: TGTTemplate);
   end;
 
   IGTLoaderContext2 = interface ['{BDDE8994-D0AF-4AA1-9AE6-073FFEE5B1AA}']
     function SolveReference(const AClass: TGTBaseClass; const AReferenceID: TGTReferenceID): TGTBaseObject;
     procedure DeclareReference(const AInstance: TGTBaseObject; const AReferenceID: TGTReferenceID);
+  end;
+
+  IGTTemplateLoaderContext = interface ['{D50EF020-73BA-4F48-8A3D-0B59364C6B1A}']
+    function SolveTemplateReference(const AReferenceID: TGTReferenceID): TGTTemplate;
+    procedure DeclareTemplateReference(const AReferenceID: TGTReferenceID; Instance: TGTTemplate);
   end;
 
   ENullReferenceException = class (Exception);
@@ -366,6 +369,7 @@ type
     function GetOnPropUpdate: TGTPropChangeEventList;
   protected
     procedure AssignTo(Dest: TPersistent); override;
+    procedure RaiseMissingContext(AContextName: String);
   public
     procedure Assign(Source: TPersistent); override;
     procedure LoadFromXML(const XMLNode: TxmlNode; Context: IGTLoaderContext = nil);
@@ -1773,6 +1777,11 @@ begin
     inherited AssignTo(Dest);
 end;
 
+procedure TGTTemplate.RaiseMissingContext(AContextName: String);
+begin
+  raise EGTContextError.CreateFmt('%s needs %s to load.', [ClassName, AContextName]);
+end;
+
 procedure TGTTemplate.Assign(Source: TPersistent);
 begin
   if (Source is TGTBaseObject) then
@@ -1793,7 +1802,10 @@ procedure TGTTemplate.LoadFromXML(const XMLNode: TxmlNode; Context: IGTLoaderCon
 var
   TmpValue: TxmlString;
   InstanceNode: TxmlNode;
+  TemplateContext: IGTTemplateLoaderContext;
 begin
+  if Context <> nil then
+    Context.QueryInterface(IGTTemplateLoaderContext, TemplateContext);
   TmpValue := XMLNode.NodeValue['id'];
   if TmpValue = '' then
     FID := NULL
@@ -1803,8 +1815,8 @@ begin
   InstanceNode := XMLNode.Node['instance'];
   FInstance := TGTObjectFactory.CreateGTClass(InstanceNode.Attribute['classname']);
   FInstance.LoadFromXML(InstanceNode, Context);
-  if Context <> nil then
-    Context.DeclareTemplateReference(FID, Self);
+  if TemplateContext <> nil then
+    TemplateContext.DeclareTemplateReference(FID, Self);
 end;
 
 procedure TGTTemplate.SaveToXML(const XMLNode: TxmlNode);
