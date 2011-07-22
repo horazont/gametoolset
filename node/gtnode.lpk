@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Package Version="4">
+    <Name Value="gtnode"/>
+    <CompilerOptions>
+      <Version Value="10"/>
+      <SearchPaths>
+        <OtherUnitFiles Value="datatypes"/>
+        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)/"/>
+      </SearchPaths>
+      <Other>
+        <CompilerMessages>
+          <UseMsgFile Value="True"/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Version Minor="8"/>
+    <Files Count="3">
+      <Item1>
+        <Filename Value="gtnodecontroller.pas"/>
+        <UnitName Value="GTNodeController"/>
+      </Item1>
+      <Item2>
+        <Filename Value="gtnodes.pas"/>
+        <UnitName Value="GTNodes"/>
+      </Item2>
+      <Item3>
+        <Filename Value="datatypes/gtnodedatatypeblockmemory.pas"/>
+        <UnitName Value="GTNodeDataTypeBlockMemory"/>
+      </Item3>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="3">
+      <Item1>
+        <PackageName Value="gtstruct"/>
+        <MinVersion Minor="8" Valid="True"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="gtcore"/>
+        <MinVersion Minor="8" Valid="True"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="FCL"/>
+      </Item3>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

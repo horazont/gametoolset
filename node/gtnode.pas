@@ -2,12 +2,12 @@
   This source is only used to compile and install the package.
  }
 
-unit gtcore; 
+unit gtnode; 
 
 interface
 
 uses
-  GTBase, GTConfig, GTPaths, GTStuff, GTXML, GTURI, GTDebug, LazarusPackageIntf;
+  GTNodeController, GTNodes, GTNodeDataTypeBlockMemory, LazarusPackageIntf;
 
 implementation
 
@@ -16,5 +16,5 @@ begin
 end; 
 
 initialization
-  RegisterPackage('gtcore', @Register); 
+  RegisterPackage('gtnode', @Register); 
 end.
