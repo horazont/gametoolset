@@ -281,12 +281,12 @@ type
     procedure DoNodeCreated(const ANode: TGTNode);
     procedure DoNodeDeleting(const ANode: TGTNode);
     procedure DoNodeUpdated(const ANode: TGTNode);
-    procedure ForceState(const AState: TGTNodeOvermindState);
-    procedure ForceMaxState(const AState: TGTNodeOvermindState);
-    procedure ForceMinState(const AState: TGTNodeOvermindState);
   public
     procedure BeforeDestruction; override;
     procedure DeleteAllNodes;
+    procedure ForceState(const AState: TGTNodeOvermindState);
+    procedure ForceMaxState(const AState: TGTNodeOvermindState);
+    procedure ForceMinState(const AState: TGTNodeOvermindState);
     procedure Init;
     procedure Lock;
     function NewNode(const AThread: TGTNodeThreadClass;
@@ -1148,6 +1148,19 @@ begin
   FOnNodeUpdated.Call(Self, ANode);
 end;
 
+procedure TGTNodeOvermind.BeforeDestruction;
+begin
+  ForceMaxState(osInitialized);
+  inherited BeforeDestruction;
+end;
+
+procedure TGTNodeOvermind.DeleteAllNodes;
+begin
+  ForceState(osUnlocked);
+  while FNodes.Count > 0 do
+    FNodes[0].Free;
+end;
+
 procedure TGTNodeOvermind.ForceState(const AState: TGTNodeOvermindState);
 begin
   if FState <> AState then
@@ -1164,19 +1177,6 @@ procedure TGTNodeOvermind.ForceMinState(const AState: TGTNodeOvermindState);
 begin
   if FState < AState then
     raise EGTNodeLockError.CreateFmt('State above or equal to %s required.', [Copy(GetEnumName(TypeInfo(AState), Ord(AState)), 2, 100)]);
-end;
-
-procedure TGTNodeOvermind.BeforeDestruction;
-begin
-  ForceMaxState(osInitialized);
-  inherited BeforeDestruction;
-end;
-
-procedure TGTNodeOvermind.DeleteAllNodes;
-begin
-  ForceState(osUnlocked);
-  while FNodes.Count > 0 do
-    FNodes[0].Free;
 end;
 
 procedure TGTNodeOvermind.Init;
@@ -1201,6 +1201,8 @@ var
   Node: TGTNode;
   DataType: TGTNodeDataType;
 begin
+  if FState = osLocked then
+    Exit;
   ForceState(osInitialized);
   FState := osLocked;
   for Node in FNodes do
