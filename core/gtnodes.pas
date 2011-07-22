@@ -30,7 +30,14 @@ unit GTNodes;
 interface
 
 uses
-  Classes, SysUtils, GTBase, fgl, GTThreadFIFO, typinfo, GTDebug;
+  Classes, SysUtils, GTBase, fgl, GTThreadFIFO, typinfo, GTDebug, syncobjs;
+
+const
+  NODE_THREAD_COMMAND_NONE =        $00;
+  NODE_THREAD_COMMAND_SETUP_IO =    $01;
+  NODE_THREAD_COMMAND_INIT =        $02;
+  NODE_THREAD_COMMAND_BURN =        $03;
+  NODE_THREAD_COMMAND_PAUSE =       $10;
 
 type
   EGTNodeError = class(EGTError);
@@ -48,6 +55,7 @@ type
 
   TGTNodeOvermindState = (osUnlocked, osInitialized, osLocked);
   TGTNodeTypeState = (tsBurned, tsParametrized, tsInitialized);
+  TGTNodeThreadState = (nsBurned, nsIOSetup, nsInitialized);
 
   { TGTNodeDataType }
 
@@ -172,21 +180,23 @@ type
       const AOwnerNode: TGTNode); virtual;
     destructor Destroy; override;
   private
-    FResetTerminated: Boolean;
+    FCommandLock: TCriticalSection;
+    FNextCommand: Cardinal;
+    FSuspendAfterCommand: Boolean;
+    FState: TGTNodeThreadState;
+
     FOwner: TGTNode;
     FOvermind: TGTNodeOvermind;
-    FPauseRequested: Boolean;
-    FResetRequested: Boolean;
-    FResetSemaphore: Pointer;
     FInData, FOutData: TGTNodeDataSet;
     FInCount, FOutCount: TGTNodePortNumber;
   protected
     FInPorts: array of TGTNodeInFIFO;
     FOutPorts: array of TGTNodeOutFIFO;
   protected
-    procedure CheckReset;
+    procedure CheckCommand;
     function GetOwner: TGTNode;
     function GetOvermind: TGTNodeOvermind;
+    procedure HandleCommand(const ACommand: Cardinal); virtual;
     procedure SetupInPorts(const ATypes: array of TGTNodeDataTypeClass);
     procedure SetupOutPorts(const ATypes: array of TGTNodeDataType);
   protected
@@ -198,9 +208,8 @@ type
     procedure SetupIO; virtual; // note that SetupIO suspends the thread!
   public
     procedure Execute; override;
-    procedure Reset;
-    procedure Pause;
-    procedure WaitForReset(const APostReset: Boolean = True);
+    procedure PostCommand(const ACommand: Cardinal; const ASuspendAfterCommand: Boolean = False; const ARaiseIfPending: Boolean = True);
+    procedure WaitForCommand;
   public
     class function GetName: String; virtual; abstract;
     class function GetDescription: String; virtual;
@@ -244,12 +253,10 @@ type
     procedure ForceMaxState(const AState: TGTNodeOvermindState);
     procedure ForceMinState(const AState: TGTNodeOvermindState);
     procedure RaiseOutOfBounds(const AIndex: String; const AValue, AMin, AMax: Integer);
-    procedure Reset;
     procedure RequireOvermind;
     procedure SetupInPorts(const ACount: Integer);
     procedure SetupOutPorts(const ACount: Integer);
     procedure SourceConnected(Sender: TObject);
-    procedure WaitForReset(const APostReset: Boolean = True);
   public
     procedure AfterConstruction; override;
     procedure BeforeDestruction; override;
@@ -609,23 +616,23 @@ begin
   if not TMInitialized then
     GetThreadManager(TM);
   inherited Create(True);
+  FCommandLock := TCriticalSection.Create;
+  FNextCommand := NODE_THREAD_COMMAND_NONE;
+  FSuspendAfterCommand := False;
   FOvermind := AOvermind;
   FOwner := AOwnerNode;
-  FResetRequested := False;
-  FResetSemaphore := TM.SemaphoreInit();
-  FPauseRequested := False;
   {$ifdef DebugMsg}
   DebugMsg('Created (%16.16x)', [Int64(FResetSemaphore)], Self);
   {$endif}
   SetupInPorts([]);
   SetupOutPorts([]);
+  FState := nsBurned;
 end;
 
 destructor TGTNodeThread.Destroy;
 var
   I: Integer;
 begin
-  TM.SemaphoreDestroy(FResetSemaphore);
   {$ifdef DebugMsg}
   DebugMsg('Destructing (%16.16x)', [Int64(FResetSemaphore)], Self);
   {$endif}
@@ -644,40 +651,56 @@ begin
   {$endif}
 end;
 
-procedure TGTNodeThread.CheckReset;
+procedure TGTNodeThread.CheckCommand;
 begin
-  if FResetRequested then
-  begin
-    ThreadSwitch;
-    {$ifdef DebugMsg}
-    DebugMsg('CheckReset: Received (%16.16x), entering RESET STATE I (sync)', [Int64(FResetSemaphore)], Self);
-    {$endif}
-    TM.SemaphorePost(FResetSemaphore);
-    Suspend;
-    {$ifdef DebugMsg}
-    DebugMsg('CheckReset: Entering RESET STATE II (burn)', [Int64(FResetSemaphore)], Self);
-    {$endif}
-    ThreadSwitch;
-    Burn;
-    ThreadSwitch;
-    {$ifdef DebugMsg}
-    DebugMsg('CheckReset: Reached RESET STATE II (burn) (%16.16x)', [Int64(FResetSemaphore)], Self);
-    {$endif}
-    TM.SemaphorePost(FResetSemaphore);
-    Suspend; // <-- this is the state where the thread should be equal to a newly created
-    if Terminated then
+  FCommandLock.Acquire;
+  try
+    if FNextCommand <> NODE_THREAD_COMMAND_NONE then
     begin
-      {$ifdef DebugMsg}
-      DebugMsg('CheckReset: Terminated', [], Self);
-      {$endif}
-      FResetTerminated := True;
-      FResetRequested := False;
-      Exit;
+      case FNextCommand of
+        NODE_THREAD_COMMAND_SETUP_IO:
+        begin
+          if FState <> nsBurned then
+            Exit;
+          SetupIO;
+        end;
+        NODE_THREAD_COMMAND_INIT:
+        begin
+          if FState > nsIOSetup then
+            Exit;
+          if FState = nsBurned then
+            SetupIO;
+          Init;
+        end;
+        NODE_THREAD_COMMAND_BURN:
+        begin
+          if FState <> nsInitialized then
+            Exit;
+          Burn;
+        end;
+        NODE_THREAD_COMMAND_PAUSE:
+        begin
+          if FState <> nsInitialized then
+            Exit;
+          FSuspendAfterCommand := True;
+        end;
+      else
+        HandleCommand(FNextCommand);
+      end;
     end;
-    SetupIO;
-    Init;
-    FResetRequested := False;
+  finally
+    FNextCommand := NODE_THREAD_COMMAND_NONE;
+    if FSuspendAfterCommand then
+    begin
+      FSuspendAfterCommand := False;
+      FCommandLock.Release;
+      Suspend;
+    end
+    else
+      FCommandLock.Release;
   end;
+  // Always check for a new command!
+  CheckCommand;
 end;
 
 function TGTNodeThread.GetOwner: TGTNode;
@@ -688,6 +711,11 @@ end;
 function TGTNodeThread.GetOvermind: TGTNodeOvermind;
 begin
   Exit(FOvermind);
+end;
+
+procedure TGTNodeThread.HandleCommand(const ACommand: Cardinal);
+begin
+  raise EGTNodeError.CreateFmt('Unknown command: %d', [ACommand]);
 end;
 
 procedure TGTNodeThread.SetupInPorts(
@@ -769,12 +797,14 @@ begin
     FOutPorts[I].Clear;
   BurnDataSet(FInData);
   BurnDataSet(FOutData);
+  FState := nsBurned;
 end;
 
 procedure TGTNodeThread.Init;
 begin
   FInData := InitDataSet(FInCount);
   FOutData := InitDataSet(FOutCount);
+  FState := nsInitialized;
 end;
 
 function TGTNodeThread.RequireInput(const AInput: TGTNodePortNumber): Boolean;
@@ -789,7 +819,7 @@ begin
   {$ifdef DebugMsg}
   DebugMsg('SetupIO', [], Self);
   {$endif}
-  Suspend;
+  FState := nsIOSetup;
 end;
 
 procedure TGTNodeThread.Execute;
@@ -797,42 +827,23 @@ var
   I: Integer;
   Got: TGTNodePortNumber;
 begin
-  FResetTerminated := False;
   try
-    SetupIO;
-    Init;
     try
       while not Terminated do
       begin
-        CheckReset;
+        CheckCommand;
         if Terminated then
           Exit;
-        if FPauseRequested then
-        begin
-          DebugMsg('Pausing', [], Self);
-          Suspend;
-          DebugMsg('Unpaused', [], Self);
-          FPauseRequested := False;
-        end;
-        CheckReset;
-        if Terminated then
-          Exit;
+        if FState <> nsInitialized then
+          Continue;
         Got := 0;
         while Got < FInCount do
         begin
-          CheckReset;
+          CheckCommand;
           if Terminated then
             Exit;
-          if FPauseRequested then
-          begin
-            DebugMsg('Pausing', [], Self);
-            Suspend;
-            DebugMsg('Unpaused', [], Self);
-            FPauseRequested := False;
-          end;
-          CheckReset;
-          if Terminated then
-            Exit;
+          if FState <> nsInitialized then
+            Break;
           Got := 0;
           for I := 0 to FInCount - 1 do
           begin
@@ -850,6 +861,8 @@ begin
           end;
           ThreadSwitch;
         end;
+        if FState <> nsInitialized then
+          Continue;
         if ProcessDataSet(FInData, FOutData) then
         begin
           for I := 0 to FOutCount - 1 do
@@ -865,8 +878,17 @@ begin
       {$ifdef DebugMsg}
       DebugMsg('Thread terminating (FResetTerminated = %d)', [Integer(FResetTerminated)], Self);
       {$endif}
-      if not FResetTerminated then
-        Burn;
+      case FState of
+        nsIOSetup:
+        begin
+          Init;
+          Burn;
+        end;
+        nsInitialized:
+        begin
+          Burn;
+        end;
+      end;
     end;
     {$ifdef DebugMsg}
     DebugMsg('Thread terminated gracefully.', [], Self);
@@ -879,27 +901,43 @@ begin
   end;
 end;
 
-procedure TGTNodeThread.Reset;
+procedure TGTNodeThread.PostCommand(const ACommand: Cardinal;
+  const ASuspendAfterCommand: Boolean; const ARaiseIfPending: Boolean);
 begin
-  FResetRequested := True;
-  // make sure the thread is running
+  FCommandLock.Acquire;
+  try
+    if FNextCommand <> NODE_THREAD_COMMAND_NONE then
+    begin
+      if ARaiseIfPending then
+        raise EGTNodeError.CreateFmt('Command queue is not empty (%d waits to be run).', [FNextCommand])
+      else
+      begin
+        FCommandLock.Release;
+        WaitForCommand;
+        FCommandLock.Acquire;
+      end;
+    end;
+    FNextCommand := ACommand;
+    FSuspendAfterCommand := ASuspendAfterCommand;
+  finally
+    FCommandLock.Release;
+  end;
   Resume;
 end;
 
-procedure TGTNodeThread.Pause;
+procedure TGTNodeThread.WaitForCommand;
+var
+  Done: Boolean;
 begin
-  FPauseRequested := True;
-end;
-
-procedure TGTNodeThread.WaitForReset(const APostReset: Boolean);
-begin
-  {$ifdef DebugMsg}
-  DebugMsg('WaitForReset (%16.16x)', [Int64(FResetSemaphore)], Self);
-  {$endif}
-  if APostReset then
-    FResetRequested := True;
-  ThreadSwitch;
-  TM.SemaphoreWait(FResetSemaphore);
+  Done := False;
+  repeat
+    FCommandLock.Acquire;
+    if FNextCommand <> NODE_THREAD_COMMAND_NONE then
+      Done := True;
+    FCommandLock.Release;
+    if not Done then
+      Sleep(1);
+  until Done;
 end;
 
 class function TGTNodeThread.GetDescription: String;
@@ -930,7 +968,8 @@ begin
   if AOvermind = nil then
     RequireOvermind;
   inherited Create;
-  FProcessorThread := AProcessorThread.Create(AOvermind, Self);
+  if AProcessorThread <> nil then
+    FProcessorThread := AProcessorThread.Create(AOvermind, Self);
   FOwnsThread := AOwnsThread;
   FOvermind := AOvermind;
 end;
@@ -1015,11 +1054,6 @@ begin
   raise EListError.CreateFmt('%s index (%d) out of bounds (%d..%d).', [AIndex, AValue, AMin, AMax]);
 end;
 
-procedure TGTNode.Reset;
-begin
-  FProcessorThread.Reset;
-end;
-
 procedure TGTNode.RequireOvermind;
 begin
   raise EGTNodeError.Create('Overmind required.');
@@ -1092,11 +1126,6 @@ end;
 procedure TGTNode.SourceConnected(Sender: TObject);
 begin
   DoChange;
-end;
-
-procedure TGTNode.WaitForReset(const APostReset: Boolean);
-begin
-  FProcessorThread.WaitForReset(APostReset);
 end;
 
 procedure TGTNode.AfterConstruction;
@@ -1185,13 +1214,9 @@ var
 begin
   ForceState(osUnlocked);
   for Node in FNodes do
-    Node.FProcessorThread.Resume; // first resume after unlock will setup IO
-
+    Node.FProcessorThread.PostCommand(NODE_THREAD_COMMAND_SETUP_IO, True);
   for Node in FNodes do
-  begin
-    while not Node.FProcessorThread.Suspended do
-      ThreadSwitch;
-  end;
+    Node.FProcessorThread.WaitForCommand;
   Sleep(1);
   FState := osInitialized;
 end;
@@ -1232,16 +1257,9 @@ var
 begin
   ForceState(osLocked);
   for Node in FNodes do
-  begin
-    if not Node.FProcessorThread.Suspended then
-      Node.FProcessorThread.Pause;
-  end;
-  Sleep(1);
+    Node.FProcessorThread.PostCommand(NODE_THREAD_COMMAND_PAUSE, True);
   for Node in FNodes do
-  begin
-    while not Node.FProcessorThread.Suspended do
-      Sleep(1);
-  end;
+    Node.FProcessorThread.WaitForCommand;
 end;
 
 procedure TGTNodeOvermind.ResumeAll;
@@ -1264,46 +1282,14 @@ var
   DataType: TGTNodeDataType;
 begin
   ForceState(osLocked);
-  {$ifdef DebugMsg}
-  DebugMsg('Sending reset signals', [], Self);
-  {$endif}
   for Node in FNodes do
-  begin
-    Node.Reset;
-    ThreadSwitch;
-  end;
-  {$ifdef DebugMsg}
-  DebugMsg('Waiting for threads to arrive in SYNCed state', [], Self);
-  {$endif}
+    Node.FProcessorThread.PostCommand(NODE_THREAD_COMMAND_PAUSE, True);
   for Node in FNodes do
-    Node.WaitForReset(False);
-  // make sure that suspended state arrived in the scheduler, otherwise resume
-  // may get lost!
-  Sleep(1);
-  // now all nodes are ready to reset. This means they are all synced in the
-  // CheckReset method. Actual reset takes place here:
-  {$ifdef DebugMsg}
-  DebugMsg('Resuming threads to put them into burned state', [], Self);
-  {$endif}
+    Node.FProcessorThread.WaitForCommand;
   for Node in FNodes do
-  begin
-    Node.FProcessorThread.Resume;
-    ThreadSwitch;
-  end;
-  {$ifdef DebugMsg}
-  DebugMsg('Waiting for threads to arrive in burned state', [], Self);
-  {$endif}
+    Node.FProcessorThread.PostCommand(NODE_THREAD_COMMAND_BURN, True);
   for Node in FNodes do
-    Node.WaitForReset(False);
-  {$ifdef DebugMsg}
-  DebugMsg('All threads are is reset state II, burning types', [], Self);
-  {$endif}
-  // now all ran through the Burn method, posted the semaphore and suspended.
-  // They are in a state equal to a newly created thread.
-  Sleep(1);
-  {$ifdef DebugMsg}
-  DebugMsg('Reset done', [], Self);
-  {$endif}
+    Node.FProcessorThread.WaitForCommand;
   FState := osUnlocked;
 end;
 

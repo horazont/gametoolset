@@ -8,7 +8,7 @@ interface
 
 uses
   GTIntMap, GTMethodList, GTThreadFIFO, GTOrderedQueue, GTBlockMemoryManager, 
-  LazarusPackageIntf;
+  GTRingBuffer, LazarusPackageIntf;
 
 implementation
 
