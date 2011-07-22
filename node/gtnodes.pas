@@ -180,8 +180,6 @@ type
       const AOwnerNode: TGTNode); virtual;
     destructor Destroy; override;
   private
-    FCommandLock: TCriticalSection;
-    FNextCommand: Cardinal;
     FSuspendAfterCommand: Boolean;
     FState: TGTNodeThreadState;
 
@@ -190,6 +188,8 @@ type
     FInData, FOutData: TGTNodeDataSet;
     FInCount, FOutCount: TGTNodePortNumber;
   protected
+    FCommandLock: TCriticalSection;
+    FNextCommand: Cardinal;
     FInPorts: array of TGTNodeInFIFO;
     FOutPorts: array of TGTNodeOutFIFO;
   protected
@@ -197,6 +197,7 @@ type
     function GetOwner: TGTNode;
     function GetOvermind: TGTNodeOvermind;
     procedure HandleCommand(const ACommand: Cardinal); virtual;
+    procedure CommandSuspend; virtual;
     procedure SetupInPorts(const ATypes: array of TGTNodeDataTypeClass);
     procedure SetupOutPorts(const ATypes: array of TGTNodeDataType);
   protected
@@ -207,9 +208,10 @@ type
     function RequireInput(const AInput: TGTNodePortNumber): Boolean; virtual;
     procedure SetupIO; virtual; // note that SetupIO suspends the thread!
   public
+    procedure DoResume; virtual;
     procedure Execute; override;
     procedure PostCommand(const ACommand: Cardinal; const ASuspendAfterCommand: Boolean = False; const ARaiseIfPending: Boolean = True);
-    procedure WaitForCommand;
+    procedure WaitForCommand; virtual;
   public
     class function GetName: String; virtual; abstract;
     class function GetDescription: String; virtual;
@@ -694,7 +696,7 @@ begin
     begin
       FSuspendAfterCommand := False;
       FCommandLock.Release;
-      Suspend;
+      CommandSuspend;
     end
     else
       FCommandLock.Release;
@@ -716,6 +718,11 @@ end;
 procedure TGTNodeThread.HandleCommand(const ACommand: Cardinal);
 begin
   raise EGTNodeError.CreateFmt('Unknown command: %d', [ACommand]);
+end;
+
+procedure TGTNodeThread.CommandSuspend;
+begin
+  Suspend;
 end;
 
 procedure TGTNodeThread.SetupInPorts(
@@ -822,6 +829,11 @@ begin
   FState := nsIOSetup;
 end;
 
+procedure TGTNodeThread.DoResume;
+begin
+  Resume;
+end;
+
 procedure TGTNodeThread.Execute;
 var
   I: Integer;
@@ -922,7 +934,7 @@ begin
   finally
     FCommandLock.Release;
   end;
-  Resume;
+  DoResume;
 end;
 
 procedure TGTNodeThread.WaitForCommand;
@@ -1231,7 +1243,11 @@ begin
   ForceState(osInitialized);
   FState := osLocked;
   for Node in FNodes do
-    Node.FProcessorThread.Resume; // first resume after init will start
+    Node.FProcessorThread.PostCommand(NODE_THREAD_COMMAND_INIT, True);
+  for Node in FNodes do
+    Node.FProcessorThread.WaitForCommand;
+  for Node in FNodes do
+    Node.FProcessorThread.DoResume;
   Sleep(1);
 end;
 
@@ -1248,7 +1264,10 @@ begin
   Result := NodeClass.Create(Self, AThread, AOwnsThread);
   Sleep(1);
   if FState = osInitialized then
-    Result.FProcessorThread.Resume; // first resume will initialize thread and node
+  begin
+    Result.FProcessorThread.PostCommand(NODE_THREAD_COMMAND_SETUP_IO, True);
+    Result.FProcessorThread.WaitForCommand;
+  end;
 end;
 
 procedure TGTNodeOvermind.PauseAll;
@@ -1270,7 +1289,7 @@ begin
   for Node in FNodes do
   begin
     if Node.FProcessorThread.Suspended then
-      Node.FProcessorThread.Resume;
+      Node.FProcessorThread.DoResume;
   end;
   Sleep(1);
 end;

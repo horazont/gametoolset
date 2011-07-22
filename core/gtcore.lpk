@@ -35,30 +35,31 @@
         <UnitName Value="GTConfig"/>
       </Item2>
       <Item3>
-        <Filename Value="gtpaths.pas"/>
-        <UnitName Value="GTPaths"/>
+        <Filename Value="gtdebug.pas"/>
+        <UnitName Value="GTDebug"/>
       </Item3>
       <Item4>
-        <Filename Value="gtstuff.pas"/>
-        <UnitName Value="GTStuff"/>
+        <Filename Value="gtpaths.pas"/>
+        <UnitName Value="GTPaths"/>
       </Item4>
       <Item5>
-        <Filename Value="gtxml.pas"/>
-        <UnitName Value="GTXML"/>
+        <Filename Value="gtstuff.pas"/>
+        <UnitName Value="GTStuff"/>
       </Item5>
       <Item6>
         <Filename Value="gturi.pas"/>
         <UnitName Value="GTURI"/>
       </Item6>
       <Item7>
-        <Filename Value="gtdebug.pas"/>
-        <UnitName Value="GTDebug"/>
+        <Filename Value="gtxml.pas"/>
+        <UnitName Value="GTXML"/>
       </Item7>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="4">
       <Item1>
         <PackageName Value="gtstruct"/>
+        <MinVersion Minor="8" Valid="True"/>
       </Item1>
       <Item2>
         <PackageName Value="libxml2pkg"/>
