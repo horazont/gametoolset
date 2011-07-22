@@ -7,7 +7,8 @@ unit gtnode;
 interface
 
 uses
-  GTNodeController, GTNodes, GTNodeDataTypeBlockMemory, LazarusPackageIntf;
+  GTMainThreadNode, GTNodeController, GTNodes, GTNodeDataTypeBlockMemory, 
+  LazarusPackageIntf;
 
 implementation
 

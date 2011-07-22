@@ -16,19 +16,23 @@
       </Other>
     </CompilerOptions>
     <Version Minor="8"/>
-    <Files Count="3">
+    <Files Count="4">
       <Item1>
-        <Filename Value="gtnodecontroller.pas"/>
-        <UnitName Value="GTNodeController"/>
+        <Filename Value="gtmainthreadnode.pas"/>
+        <UnitName Value="gtmainthreadnode"/>
       </Item1>
       <Item2>
-        <Filename Value="gtnodes.pas"/>
-        <UnitName Value="GTNodes"/>
+        <Filename Value="gtnodecontroller.pas"/>
+        <UnitName Value="GTNodeController"/>
       </Item2>
       <Item3>
+        <Filename Value="gtnodes.pas"/>
+        <UnitName Value="GTNodes"/>
+      </Item3>
+      <Item4>
         <Filename Value="datatypes/gtnodedatatypeblockmemory.pas"/>
         <UnitName Value="GTNodeDataTypeBlockMemory"/>
-      </Item3>
+      </Item4>
     </Files>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="3">

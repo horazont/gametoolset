@@ -39,15 +39,19 @@ type
     constructor Create(const ASize: SizeUInt);
     destructor Destroy; override;
   private
+    FAvailable: SizeUInt;
     FDataBuffer: Pointer;
     FLock: TCriticalSection;
     FReadOffset: SizeUInt;
     FSize: SizeUInt;
     FWriteOffset: SizeUInt;
+    function GetAvailable: SizeUInt;
   public
     function Read(var Buffer; Count: Longint): Longint; override;
     procedure Reset;
     function Write(const Buffer; Count: Longint): Longint; override;
+  public
+    property Available: SizeUInt read GetAvailable;
   end;
 
 implementation
@@ -75,6 +79,13 @@ begin
   FreeMem(FDataBuffer);
   FLock.Free;
   inherited Destroy;
+end;
+
+function TGTRingBuffer.GetAvailable: SizeUInt;
+begin
+  FLock.Acquire;
+  Result := FAvailable;
+  FLock.Release;
 end;
 
 function TGTRingBuffer.Read(var Buffer; Count: Longint): Longint;
@@ -121,6 +132,8 @@ var
     Target += Result;
   end;
 
+var
+  ReadThisTime: SizeUInt;
 begin
   FLock.Acquire;
   try
@@ -134,10 +147,12 @@ begin
   Result := 0;
   while Result < Count do
   begin
-    Result += ReadStep(Count - Result);
+    ReadThisTime := ReadStep(Count - Result);
+    Result += ReadThisTime;
     FLock.Acquire;
     AWriteOffset := FWriteOffset;
     FReadOffset := AReadOffset;
+    FAvailable -= ReadThisTime;
     FLock.Release;
     ThreadSwitch;
   end;
@@ -199,6 +214,8 @@ var
     Source += Result;
   end;
 
+var
+  WroteThisTime: SizeUInt;
 begin
   FLock.Acquire;
   try
@@ -210,12 +227,15 @@ begin
 
   Source := @Buffer;
   Result := 0;
+
   while Result < Count do
   begin
-    Result += WriteStep(Count - Result);
+    WroteThisTime := WriteStep(Count - Result);
+    Result += WroteThisTime;
     FLock.Acquire;
     FWriteOffset := AWriteOffset;
     AReadOffset := FReadOffset;
+    FAvailable += WroteThisTime;
     FLock.Release;
     ThreadSwitch;
   end;
