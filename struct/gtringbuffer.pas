@@ -46,6 +46,7 @@ type
     FWriteOffset: SizeUInt;
   public
     function Read(var Buffer; Count: Longint): Longint; override;
+    procedure Reset;
     function Write(const Buffer; Count: Longint): Longint; override;
   end;
 
@@ -139,6 +140,17 @@ begin
     FReadOffset := AReadOffset;
     FLock.Release;
     ThreadSwitch;
+  end;
+end;
+
+procedure TGTRingBuffer.Reset;
+begin
+  FLock.Acquire;
+  try
+    FReadOffset := 0;
+    FWriteOffset := 0;
+  finally
+    FLock.Release;
   end;
 end;
 
