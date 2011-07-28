@@ -1,17 +1,13 @@
 <?xml version="1.0"?>
 <CONFIG>
   <Package Version="4">
-    <Name Value="gametoolsetpkg"/>
-    <AddToProjectUsesSection Value="True"/>
-    <Author Value="Jonas Wielicki <j.wielicki@sotecware.net>"/>
+    <Name Value="gtnode"/>
     <CompilerOptions>
       <Version Value="10"/>
       <SearchPaths>
+        <OtherUnitFiles Value="datatypes"/>
         <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
-      <CodeGeneration>
-        <SmartLinkUnit Value="True"/>
-      </CodeGeneration>
       <Other>
         <CompilerMessages>
           <UseMsgFile Value="True"/>
@@ -19,10 +15,27 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <License Value="MPL/LGPL dual-license"/>
     <Version Minor="9"/>
+    <Files Count="4">
+      <Item1>
+        <Filename Value="gtmainthreadnode.pas"/>
+        <UnitName Value="gtmainthreadnode"/>
+      </Item1>
+      <Item2>
+        <Filename Value="gtnodecontroller.pas"/>
+        <UnitName Value="GTNodeController"/>
+      </Item2>
+      <Item3>
+        <Filename Value="gtnodes.pas"/>
+        <UnitName Value="GTNodes"/>
+      </Item3>
+      <Item4>
+        <Filename Value="datatypes/gtnodedatatypeblockmemory.pas"/>
+        <UnitName Value="GTNodeDataTypeBlockMemory"/>
+      </Item4>
+    </Files>
     <Type Value="RunAndDesignTime"/>
-    <RequiredPkgs Count="6">
+    <RequiredPkgs Count="3">
       <Item1>
         <PackageName Value="gtstruct"/>
         <MinVersion Minor="9" Valid="True"/>
@@ -32,21 +45,8 @@
         <MinVersion Minor="9" Valid="True"/>
       </Item2>
       <Item3>
-        <PackageName Value="gtfile"/>
-        <MinVersion Minor="9" Valid="True"/>
+        <PackageName Value="FCL"/>
       </Item3>
-      <Item4>
-        <PackageName Value="gtnet"/>
-        <MinVersion Minor="9" Valid="True"/>
-      </Item4>
-      <Item5>
-        <PackageName Value="gtnode"/>
-        <MinVersion Minor="9" Valid="True"/>
-      </Item5>
-      <Item6>
-        <PackageName Value="gtlcl"/>
-        <MinVersion Minor="9" Valid="True"/>
-      </Item6>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

@@ -2,13 +2,13 @@
   This source is only used to compile and install the package.
  }
 
-unit gtstruct; 
+unit gtnode; 
 
 interface
 
 uses
-  GTIntMap, GTMethodList, GTThreadFIFO, GTOrderedQueue, GTBlockMemoryManager, 
-  GTRingBuffer, LazarusPackageIntf;
+  GTMainThreadNode, GTNodeController, GTNodes, GTNodeDataTypeBlockMemory, 
+  LazarusPackageIntf;
 
 implementation
 
@@ -17,5 +17,5 @@ begin
 end; 
 
 initialization
-  RegisterPackage('gtstruct', @Register); 
+  RegisterPackage('gtnode', @Register); 
 end.
