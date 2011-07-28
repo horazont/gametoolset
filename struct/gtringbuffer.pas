@@ -41,17 +41,21 @@ type
   private
     FAvailable: SizeUInt;
     FDataBuffer: Pointer;
+    FDebug: Boolean;
     FLock: TCriticalSection;
     FReadOffset: SizeUInt;
     FSize: SizeUInt;
     FWriteOffset: SizeUInt;
     function GetAvailable: SizeUInt;
+  protected
+    function GetSize: Int64; override;
   public
     function Read(var Buffer; Count: Longint): Longint; override;
     procedure Reset;
     function Write(const Buffer; Count: Longint): Longint; override;
   public
     property Available: SizeUInt read GetAvailable;
+    property Debug: Boolean read FDebug write FDebug;
   end;
 
 implementation
@@ -68,10 +72,13 @@ begin
     GetThreadManager(TM);
   inherited Create;
   FLock := TCriticalSection.Create;
-  FDataBuffer := GetMem(ASize);
   FReadOffset := 0;
   FWriteOffset := 0;
   FSize := ASize;
+  FDataBuffer := GetMem(ASize + 1);
+  PByte(FDataBuffer)[ASize] := $FF;
+  FillByte(FDataBuffer^, FSize, $00);
+  FDebug := False;
 end;
 
 destructor TGTRingBuffer.Destroy;
@@ -88,20 +95,25 @@ begin
   FLock.Release;
 end;
 
+function TGTRingBuffer.GetSize: Int64;
+begin
+  Result := FSize;
+end;
+
 function TGTRingBuffer.Read(var Buffer; Count: Longint): Longint;
 var
   AWriteOffset, AReadOffset: SizeUInt;
   Target: Pointer;
 
-  function ReadStep(Count: Longint): Longint;
+  function ReadStep(ACount: Longint): Longint;
   begin
     if AReadOffset > AWriteOffset then
     begin
-      if (FSize - AReadOffset) >= Count then
+      if (FSize - AReadOffset) > ACount then
       begin
-        Move((FDataBuffer + AReadOffset)^, Target^, Count);
-        Result := Count;
-        AReadOffset += Count;
+        Move((FDataBuffer + AReadOffset)^, Target^, ACount);
+        Result := ACount;
+        AReadOffset += ACount;
         if AReadOffset = FSize then
           AReadOffset := 0;
       end
@@ -114,11 +126,11 @@ var
     end
     else if AWriteOffset > AReadOffset then
     begin
-      if (AWriteOffset - AReadOffset) >= Count then
+      if (AWriteOffset - AReadOffset) > ACount then
       begin
-        Move((FDataBuffer + AReadOffset)^, Target^, Count);
-        Result := Count;
-        AReadOffset += Count;
+        Move((FDataBuffer + AReadOffset)^, Target^, ACount);
+        Result := ACount;
+        AReadOffset += ACount;
       end
       else
       begin
@@ -134,7 +146,12 @@ var
 
 var
   ReadThisTime: SizeUInt;
+  I: SizeUInt;
 begin
+  {$ifdef DEBUG}
+  if FDebug then
+    WriteLn(Format('Attempt to read %d bytes.', [Count]));
+  {$endif}
   FLock.Acquire;
   try
     AWriteOffset := FWriteOffset;
@@ -144,10 +161,24 @@ begin
   end;
 
   Target := @Buffer;
+  FillByte(Target^, Count, $AA);
   Result := 0;
   while Result < Count do
   begin
     ReadThisTime := ReadStep(Count - Result);
+    {$ifdef DEBUG}
+    if FDebug and (ReadThisTime > 0) then
+    begin
+      WriteLn(Format('  Read %d bytes. checking for consistency.', [ReadThisTime]));
+      Sleep(1);
+      {for I := -ReadThisTime to -1 do
+        if PByte(Target)[I] <> $00 then
+        begin
+          WriteLn(Format('  Byte %d of target buffer (at current offset %d, buffer size is %d) is tainted (%2.2x). Read was from %d to %d, size is %d.', [I, Result - ReadThisTime, Count, PByte(Target)[I], AReadOffset - ReadThisTime, AReadOffset, FSize]));
+          ReadLn;
+        end;}
+    end;
+    {$endif}
     Result += ReadThisTime;
     FLock.Acquire;
     AWriteOffset := FWriteOffset;
@@ -156,6 +187,10 @@ begin
     FLock.Release;
     ThreadSwitch;
   end;
+  {$ifdef DEBUG}
+  if FDebug then
+    WriteLn(Format('Read done (%d bytes successfully read)', [Result]));
+  {$endif}
 end;
 
 procedure TGTRingBuffer.Reset;
@@ -174,35 +209,40 @@ var
   AWriteOffset, AReadOffset: SizeUInt;
   Source: Pointer;
 
-  function WriteStep(Count: Longint): Longint;
+  function WriteStep(ACount: Longint): Longint;
   var
     MaxCount: SizeUInt;
   begin
+    if (AWriteOffset = FSize) then
+    begin
+      if (AReadOffset = 0) then
+        Exit(0)
+      else
+        AWriteOffset := 0;
+    end;
     if AWriteOffset >= AReadOffset then
     begin
-      if (FSize - AWriteOffset) >= Count then
+      if (FSize - AWriteOffset) > ACount then
       begin
-        Move(Source^, (FDataBuffer + AWriteOffset)^, Count);
-        Result := Count;
-        AWriteOffset += Count;
-        if AWriteOffset = FSize then
-          AWriteOffset := 0;
+        Move(Source^, (FDataBuffer + AWriteOffset)^, ACount);
+        Result := ACount;
+        AWriteOffset += ACount;
       end
       else
       begin
         Move(Source^, (FDataBuffer + AWriteOffset)^, (FSize - AWriteOffset));
         Result := (FSize - AWriteOffset);
-        AWriteOffset := 0;
+        AWriteOffset := FSize;
       end;
     end
-    else
+    else// if AReadOffset > AWriteOffset then
     begin
       MaxCount := (AReadOffset - AWriteOffset) - 1;
-      if MaxCount >= Count then
+      if MaxCount > ACount then
       begin
-        Move(Source^, (FDataBuffer + AWriteOffset)^, Count);
-        Result := Count;
-        AWriteOffset += Count;
+        Move(Source^, (FDataBuffer + AWriteOffset)^, ACount);
+        Result := ACount;
+        AWriteOffset += ACount;
       end
       else
       begin
@@ -217,6 +257,10 @@ var
 var
   WroteThisTime: SizeUInt;
 begin
+  {$ifdef DEBUG}
+  if FDebug then
+    WriteLn(Format('Attempt to write %d bytes.', [Count]));
+  {$endif}
   FLock.Acquire;
   try
     AWriteOffset := FWriteOffset;
@@ -233,12 +277,27 @@ begin
     WroteThisTime := WriteStep(Count - Result);
     Result += WroteThisTime;
     FLock.Acquire;
+    {$ifdef DEBUG}
+    if FDebug and (WroteThisTime > 0) then
+    begin
+      WriteLn(Format('  Wrote %d bytes. Old/New write ptr: %d/%d; Old/New read ptr: %d/%d', [WroteThisTime, FWriteOffset, AWriteOffset, FReadOffset, AReadOffset]));
+//      Sleep(1);
+    end;
+    {$endif}
     FWriteOffset := AWriteOffset;
     AReadOffset := FReadOffset;
     FAvailable += WroteThisTime;
     FLock.Release;
     ThreadSwitch;
   end;
+  {$ifdef DEBUG}
+  if FDebug then
+    WriteLn(Format('Write done (%d bytes successfully written)', [Result]));
+  if FAvailable > FSize then
+  begin
+    WriteLn(Format('Overfull ringbuffer: %d/%d.', [FAvailable, FSize]));
+  end;
+  {$endif}
 end;
 
 end.
