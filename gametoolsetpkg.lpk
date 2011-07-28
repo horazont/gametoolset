@@ -20,32 +20,32 @@
       </Other>
     </CompilerOptions>
     <License Value="MPL/LGPL dual-license"/>
-    <Version Minor="8"/>
+    <Version Minor="9"/>
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="6">
       <Item1>
-        <PackageName Value="gtnode"/>
-        <MinVersion Minor="8" Valid="True"/>
+        <PackageName Value="gtstruct"/>
+        <MinVersion Minor="9" Valid="True"/>
       </Item1>
       <Item2>
-        <PackageName Value="gtstruct"/>
-        <MinVersion Minor="8" Valid="True"/>
+        <PackageName Value="gtcore"/>
+        <MinVersion Minor="9" Valid="True"/>
       </Item2>
       <Item3>
-        <PackageName Value="gtcore"/>
-        <MinVersion Minor="8" Valid="True"/>
+        <PackageName Value="gtfile"/>
+        <MinVersion Minor="9" Valid="True"/>
       </Item3>
       <Item4>
-        <PackageName Value="gtfile"/>
-        <MinVersion Minor="8" Valid="True"/>
+        <PackageName Value="gtnet"/>
+        <MinVersion Minor="9" Valid="True"/>
       </Item4>
       <Item5>
-        <PackageName Value="gtnet"/>
-        <MinVersion Minor="8" Valid="True"/>
+        <PackageName Value="gtnode"/>
+        <MinVersion Minor="9" Valid="True"/>
       </Item5>
       <Item6>
         <PackageName Value="gtlcl"/>
-        <MinVersion Minor="8" Valid="True"/>
+        <MinVersion Minor="9" Valid="True"/>
       </Item6>
     </RequiredPkgs>
     <UsageOptions>
