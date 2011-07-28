@@ -24,7 +24,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Version Minor="8"/>
+    <Version Minor="9"/>
     <Files Count="7">
       <Item1>
         <Filename Value="gtbase.pas"/>
@@ -59,7 +59,7 @@
     <RequiredPkgs Count="4">
       <Item1>
         <PackageName Value="gtstruct"/>
-        <MinVersion Minor="8" Valid="True"/>
+        <MinVersion Minor="9" Valid="True"/>
       </Item1>
       <Item2>
         <PackageName Value="libxml2pkg"/>
