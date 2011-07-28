@@ -206,7 +206,7 @@ type
     function ProcessDataSet(const AInputData: TGTNodeDataSet;
       const AOutputData: TGTNodeDataSet): Boolean; virtual; abstract;
     function RequireInput(const AInput: TGTNodePortNumber): Boolean; virtual;
-    procedure SetupIO; virtual; // note that SetupIO suspends the thread!
+    procedure SetupIO; virtual;
   public
     procedure DoResume; virtual;
     procedure Execute; override;
@@ -654,11 +654,15 @@ begin
 end;
 
 procedure TGTNodeThread.CheckCommand;
+var
+  FHadCommand: Boolean;
 begin
+  FHadCommand := False;
   FCommandLock.Acquire;
   try
     if FNextCommand <> NODE_THREAD_COMMAND_NONE then
     begin
+      FHadCommand := True;
       case FNextCommand of
         NODE_THREAD_COMMAND_SETUP_IO:
         begin
@@ -702,7 +706,8 @@ begin
       FCommandLock.Release;
   end;
   // Always check for a new command!
-  CheckCommand;
+  if FHadCommand then
+    CheckCommand;
 end;
 
 function TGTNodeThread.GetOwner: TGTNode;
@@ -866,7 +871,7 @@ begin
               if FInData[I] <> nil then
                 Inc(Got)
               else if not RequireInput(I) then
-                Inc(Got);
+                Inc(Got)
             end
             else
               Inc(Got);
@@ -881,12 +886,18 @@ begin
           begin
             FOutPorts[I].Push(FOutData[I]);
           end;
+        end
+        else
+        begin
+          DebugMsg('Skipped output!', [], Self);
         end;
         for I := 0 to FInCount - 1 do
           FInData[I] := nil;
         ThreadSwitch;
       end;
     finally
+      DebugMsg('Thread terminating', [], Self);
+      ReadLn;
       {$ifdef DebugMsg}
       DebugMsg('Thread terminating (FResetTerminated = %d)', [Integer(FResetTerminated)], Self);
       {$endif}
@@ -944,7 +955,7 @@ begin
   Done := False;
   repeat
     FCommandLock.Acquire;
-    if FNextCommand <> NODE_THREAD_COMMAND_NONE then
+    if FNextCommand = NODE_THREAD_COMMAND_NONE then
       Done := True;
     FCommandLock.Release;
     if not Done then
@@ -1159,6 +1170,7 @@ begin
   inherited Create;
   FNodes := TGTNodeList.Create;
   FOnNodeCreated := TGTNodeEventList.Create;
+  FOnNodeUpdated := TGTNodeEventList.Create;
   FOnNodeDeleting := TGTNodeEventList.Create;
   FState := osUnlocked;
 end;
@@ -1166,6 +1178,7 @@ end;
 destructor TGTNodeOvermind.Destroy;
 begin
   DeleteAllNodes;
+  FOnNodeUpdated.Free;
   FOnNodeDeleting.Free;
   FOnNodeCreated.Free;
   FNodes.Free;
@@ -1226,9 +1239,10 @@ var
 begin
   ForceState(osUnlocked);
   for Node in FNodes do
+  begin
     Node.FProcessorThread.PostCommand(NODE_THREAD_COMMAND_SETUP_IO, True);
-  for Node in FNodes do
     Node.FProcessorThread.WaitForCommand;
+  end;
   Sleep(1);
   FState := osInitialized;
 end;
